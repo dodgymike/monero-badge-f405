@@ -44,10 +44,14 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
+#include "mpu6000.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
+SPI_HandleTypeDef hspi3;
 
 UART_HandleTypeDef huart3;
 
@@ -55,8 +59,6 @@ UART_HandleTypeDef huart3;
 /* Private variables ---------------------------------------------------------*/
 
 static GPIO_InitTypeDef  GPIO_InitStruct;
-static SPI_HandleTypeDef spi = { .Instance = SPI2 };
-//static UART_HandleTypeDef s_UARTHandle = UART_HandleTypeDef();
 
 /* USER CODE END PV */
 
@@ -65,6 +67,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_SPI3_Init(void);
+static void MX_SPI1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -95,6 +99,186 @@ static uint8_t end_frame_data[] = {
 	0xff, 0xff, 0xff, 0xff /* end frame */
 };
 
+void serialSend(int8_t* buffer) {
+        //HAL_UART_Receive(&huart2, buffer, sizeof(buffer), HAL_MAX_DELAY);
+        //HAL_UART_Transmit(&huart6, buffer, 2, HAL_MAX_DELAY);
+        HAL_UART_Transmit(&huart3, buffer, strlen(buffer), HAL_MAX_DELAY);
+}
+
+uint8_t spiBusReadRegister(SPI_HandleTypeDef* spi, uint8_t mpuRegister) {
+	uint8_t registerWithFlag = 0b10000000 | mpuRegister;
+	uint8_t rxBuffer[20];
+
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	//HAL_SPI_TransmitReceive(spi, &registerWithFlag, rxBuffer, 1, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(spi, &registerWithFlag, 1, HAL_MAX_DELAY);
+	HAL_SPI_Receive(spi, &rxBuffer, 1, HAL_MAX_DELAY);
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+	return rxBuffer[0];
+}
+
+uint8_t spiBusReadRegisterBuffer(SPI_HandleTypeDef* spi, uint8_t mpuRegister, uint8_t* rxBuffer, uint8_t bufferSize) {
+	uint8_t registerWithFlag = 0b10000000 | mpuRegister;
+
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	//HAL_SPI_TransmitReceive(spi, &registerWithFlag, rxBuffer, 1, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(spi, &registerWithFlag, 1, HAL_MAX_DELAY);
+	HAL_SPI_Receive(spi, rxBuffer, bufferSize, HAL_MAX_DELAY);
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+	return rxBuffer[0];
+}
+
+uint8_t spiBusWriteRegister(SPI_HandleTypeDef* spi, uint8_t mpuRegister, uint8_t value) {
+	uint8_t writeBuffer[2] = { 0b00000000 | mpuRegister, value };
+
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(spi, writeBuffer, 2, HAL_MAX_DELAY);
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+	return 0;
+}
+
+void initMPU6000() {
+	spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_1, BIT_H_RESET);
+        HAL_Delay(200);
+	
+
+	uint8_t debugBuffer[100];
+	
+	for(int i = 0; i < 5; i++) {
+		uint8_t whoAmI = spiBusReadRegister(&hspi1, MPU_RA_WHO_AM_I);
+
+		if(whoAmI == MPU6000_WHO_AM_I_CONST) {
+			sprintf(debugBuffer, "Got MPU6000\r\n");
+			serialSend(debugBuffer);
+			break;
+		}
+
+		sprintf(debugBuffer, "WHOAMI returned (%d)\r\n", whoAmI);
+		serialSend(debugBuffer);
+        	//HAL_Delay(200);
+        	HAL_Delay(20);
+	}
+
+       	HAL_Delay(20);
+	const uint8_t productID = spiBusReadRegister(&hspi1, MPU_RA_PRODUCT_ID);
+	uint8_t* productIDString;
+	switch(productID) {
+		case MPU6000ES_REV_C4:
+			productIDString = "MPU6000ES_REV_C4";
+			break;
+		case MPU6000ES_REV_C5:
+			productIDString = "MPU6000ES_REV_C5";
+			break;
+		case MPU6000ES_REV_D6:
+			productIDString = "MPU6000ES_REV_D6";
+			break;
+		case MPU6000ES_REV_D7:
+			productIDString = "MPU6000ES_REV_D7";
+			break;
+		case MPU6000ES_REV_D8:
+			productIDString = "MPU6000ES_REV_D8";
+			break;
+		case MPU6000_REV_C4:
+			productIDString = "MPU6000ES_REV_C4";
+			break;
+		case MPU6000_REV_C5:
+			productIDString = "MPU6000ES_REV_C5";
+			break;
+		case MPU6000_REV_D6:
+			productIDString = "MPU6000ES_REV_D6";
+			break;
+		case MPU6000_REV_D7:
+			productIDString = "MPU6000ES_REV_D7";
+			break;
+		case MPU6000_REV_D8:
+			productIDString = "MPU6000ES_REV_D8";
+			break;
+		case MPU6000_REV_D9:
+			productIDString = "MPU6000ES_REV_D9";
+			break;
+		case MPU6000_REV_D10:
+			productIDString = "MPU6000ES_REV_D10";
+			break;
+		default:
+			productIDString = "UNKNOWN MPU";
+	}
+
+	sprintf(debugBuffer, "PRODUCTID returned (%d) (%s)\r\n", productID, productIDString);
+	serialSend(debugBuffer);
+
+    // Device Reset
+    spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_1, BIT_H_RESET);
+    HAL_Delay(150);
+
+    spiBusWriteRegister(&hspi1, MPU_RA_SIGNAL_PATH_RESET, BIT_GYRO | BIT_ACC | BIT_TEMP);
+    HAL_Delay(150);
+
+    // Clock Source PPL with Z axis gyro reference
+    spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_1, MPU_CLK_SEL_PLLGYROZ);
+    HAL_Delay(15);
+
+    // Disable Primary I2C Interface
+    spiBusWriteRegister(&hspi1, MPU_RA_USER_CTRL, BIT_I2C_IF_DIS);
+    HAL_Delay(15);
+
+    spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_2, 0x00);
+    HAL_Delay(15);
+
+    // Accel Sample Rate 1kHz
+    // Gyroscope Output Rate =  1kHz when the DLPF is enabled
+    //spiBusWriteRegister(&hspi1, MPU_RA_SMPLRT_DIV, gyro->mpuDividerDrops);
+    HAL_Delay(15);
+
+    // Gyro +/- 1000 DPS Full Scale
+    spiBusWriteRegister(&hspi1, MPU_RA_GYRO_CONFIG, INV_FSR_2000DPS << 3);
+    HAL_Delay(15);
+
+    // Accel +/- 8 G Full Scale
+    spiBusWriteRegister(&hspi1, MPU_RA_ACCEL_CONFIG, INV_FSR_8G << 3);
+    HAL_Delay(15);
+
+    spiBusWriteRegister(&hspi1, MPU_RA_INT_PIN_CFG, 0 << 7 | 0 << 6 | 0 << 5 | 1 << 4 | 0 << 3 | 0 << 2 | 0 << 1 | 0 << 0);  // INT_ANYRD_2CLEAR
+    HAL_Delay(15);
+
+#ifdef USE_MPU_DATA_READY_SIGNAL
+    spiBusWriteRegister(&hspi1, MPU_RA_INT_ENABLE, MPU_RF_DATA_RDY_EN);
+    HAL_Delay(15);
+#endif
+
+}
+
+void readAcc(int16_t *accData)
+{
+    int8_t data[6];
+
+    spiBusReadRegisterBuffer(&hspi1, MPU_RA_ACCEL_XOUT_H, (uint8_t*)&data, 6); 
+/*
+    const bool ack = busReadRegisterBuffer(&acc->bus, MPU_RA_ACCEL_XOUT_H, data, 6); 
+    if (!ack) {
+        return false;
+    }   
+*/
+
+    accData[0] = (int16_t)((data[0] << 8) | data[1]);
+    accData[1] = (int16_t)((data[2] << 8) | data[3]);
+    accData[2] = (int16_t)((data[4] << 8) | data[5]);
+
+/*
+    if(accData[0] & 0xf000) {
+	accData[0] *= -1;
+    }
+    if(accData[1] & 0xf000) {
+	accData[1] *= -1;
+    }
+    if(accData[2] & 0xf000) {
+	accData[2] *= -1;
+    }
+*/
+}
+
 void ClearPixels()
 {
 	for(uint16_t ledIndex = 0; ledIndex < 576; ledIndex++) {
@@ -111,7 +295,7 @@ void GenerateTestSPISignal()
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 
-        HAL_SPI_Transmit(&spi, start_frame_data, led_frame_size * 2, HAL_MAX_DELAY);
+        HAL_SPI_Transmit(&hspi2, start_frame_data, led_frame_size * 2, HAL_MAX_DELAY);
 
 	uint8_t off_led_data[] = {
 		brightness, 0x00, 0x00, 0x00
@@ -122,13 +306,13 @@ void GenerateTestSPISignal()
 			uint8_t led_data[] = {
 				brightness, 0x10, 0x10, 0x10
 			};
-			HAL_SPI_Transmit(&spi, led_data, led_frame_size, HAL_MAX_DELAY);
+			HAL_SPI_Transmit(&hspi2, led_data, led_frame_size, HAL_MAX_DELAY);
 		} else {
-			HAL_SPI_Transmit(&spi, off_led_data, led_frame_size, HAL_MAX_DELAY);
+			HAL_SPI_Transmit(&hspi2, off_led_data, led_frame_size, HAL_MAX_DELAY);
 		}
 	}
 
-        HAL_SPI_Transmit(&spi, end_frame_data, led_frame_size * 8, HAL_MAX_DELAY);
+        HAL_SPI_Transmit(&hspi2, end_frame_data, led_frame_size * 8, HAL_MAX_DELAY);
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
@@ -215,7 +399,6 @@ void rain() {
 	}
 }
 
-
 /* USER CODE END 0 */
 
 /**
@@ -283,6 +466,7 @@ int main(void)
     //GPIO_InitStruct.Alternate = GPIO_AF0_SYS;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+/*
     //__SPI1_CLK_ENABLE();
     __SPI2_CLK_ENABLE();
     spi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
@@ -295,33 +479,45 @@ int main(void)
     spi.Init.NSS = SPI_NSS_SOFT;
     spi.Init.TIMode = SPI_TIMODE_DISABLED;
     spi.Init.Mode = SPI_MODE_MASTER;
+*/
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI2_Init();
   MX_USART3_UART_Init();
+  MX_SPI3_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
     GPIO_InitStruct.Pin  = GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_12;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  serialSend("Initialising MPU6000: ");
+
+  initMPU6000();
+  serialSend("DONE\r\n");
+
+  int16_t accData[3];
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-        uint8_t buffer[] = "bob is the king\r\n";
+	//serialSend("Loop\r\n");
 
-        //HAL_UART_Receive(&huart2, buffer, sizeof(buffer), HAL_MAX_DELAY);
-        //HAL_UART_Transmit(&huart6, buffer, 2, HAL_MAX_DELAY);
-        HAL_UART_Transmit(&huart3, buffer, strlen(buffer), HAL_MAX_DELAY);
+	//serialSend("Reading from acc: ");
+	readAcc(&accData);
+	//serialSend("Done\r\n");
+
+	uint8_t accDebugString[40];
+	sprintf(accDebugString, "x (%0.6d) y (%0.6d) z (%0.6d)\r\n", accData[0], accData[1], accData[2]);
+	serialSend(accDebugString);
 
 	ClearPixels();
 	rain();
@@ -394,6 +590,30 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+/* SPI1 init function */
+static void MX_SPI1_Init(void)
+{
+
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* SPI2 init function */
 static void MX_SPI2_Init(void)
 {
@@ -412,6 +632,30 @@ static void MX_SPI2_Init(void)
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi2.Init.CRCPolynomial = 10;
   if (HAL_SPI_Init(&hspi2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* SPI3 init function */
+static void MX_SPI3_Init(void)
+{
+
+  /* SPI3 parameter configuration*/
+  hspi3.Instance = SPI3;
+  hspi3.Init.Mode = SPI_MODE_MASTER;
+  hspi3.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi3.Init.NSS = SPI_NSS_HARD_OUTPUT;
+  hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi3.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi3) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -451,10 +695,22 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PA4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB4 PB5 PB6 PB7 */
   GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
