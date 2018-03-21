@@ -371,14 +371,18 @@ struct Particle {
 
 static const uint8_t maxParticles = 32;
 struct Particle* particles[32];
-void rain() {
+void rain(int xAcc, int yAcc) {
 	int makeNewParticle = rand();
 	if(makeNewParticle > RAND_MAX / 4) {
 		for(int i = 0; i < maxParticles; i++) {
 			if(particles[i] == NULL) {
 				particles[i] = malloc(sizeof(struct Particle));
 				particles[i]->x = rand() % 24;
-				particles[i]->y = 0;
+				if(xAcc >= 0) {
+					particles[i]->y = 0;
+				} else {
+					particles[i]->y = 24;
+				}
 
 				break;
 			}
@@ -390,8 +394,13 @@ void rain() {
 			uint16_t ledIndex = xyToLedIndex(particles[i]->x, particles[i]->y);
 			pixels[ledIndex] = 1;
 
-			particles[i]->y++;
-			if(particles[i]->y >= 24) {
+			if(xAcc >= 0) {
+				particles[i]->y++;
+			} else {
+				particles[i]->y--;
+			}
+
+			if((particles[i]->y >= 24) || (particles[i]->y <= 0)) {
 				free(particles[i]);
 				particles[i] = NULL;
 			}
@@ -515,12 +524,14 @@ int main(void)
 	readAcc(&accData);
 	//serialSend("Done\r\n");
 
+/*
 	uint8_t accDebugString[40];
 	sprintf(accDebugString, "x (%0.6d) y (%0.6d) z (%0.6d)\r\n", accData[0], accData[1], accData[2]);
 	serialSend(accDebugString);
+*/
 
 	ClearPixels();
-	rain();
+	rain(accData[0], accData[1]);
 
 	GenerateTestSPISignal();
 

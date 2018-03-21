@@ -11,6 +11,8 @@ A lot of this code was taken from CleanFlight/Betaflight source:
 #define BITS_DLPF_CFG_188HZ         0x01
 #define BITS_DLPF_CFG_98HZ          0x02
 #define BITS_DLPF_CFG_42HZ          0x03
+#define BITS_DLPF_CFG_20HZ          0x04
+#define BITS_DLPF_CFG_10HZ          0x05
 
 #define GYRO_SCALE_FACTOR  0.00053292f  // (4/131) * pi/180   (32.75 LSB = 1 DPS)
 
