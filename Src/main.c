@@ -42,20 +42,25 @@
 
 /* USER CODE BEGIN Includes */
 
+#include <math.h>
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+SPI_HandleTypeDef hspi2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
 static GPIO_InitTypeDef  GPIO_InitStruct;
+static SPI_HandleTypeDef spi = { .Instance = SPI2 };
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_SPI2_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -63,6 +68,149 @@ static void MX_GPIO_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+static uint32_t pixels[576];
+
+static uint8_t start_frame_data[] = {
+	0x00, 0x00, 0x00, 0x00, /* start frame */
+	0x00, 0x00, 0x00, 0x00, /* start frame */
+	0x00, 0x00, 0x00, 0x00, /* start frame */
+	0x00, 0x00, 0x00, 0x00, /* start frame */
+	0x00, 0x00, 0x00, 0x00, /* start frame */
+	0x00, 0x00, 0x00, 0x00, /* start frame */
+	0x00, 0x00, 0x00, 0x00, /* start frame */
+	0x00, 0x00, 0x00, 0x00, /* start frame */
+};
+static uint8_t end_frame_data[] = {
+	0xff, 0xff, 0xff, 0xff, /* end frame */
+	0xff, 0xff, 0xff, 0xff, /* end frame */
+	0xff, 0xff, 0xff, 0xff, /* end frame */
+	0xff, 0xff, 0xff, 0xff, /* end frame */
+	0xff, 0xff, 0xff, 0xff, /* end frame */
+	0xff, 0xff, 0xff, 0xff, /* end frame */
+	0xff, 0xff, 0xff, 0xff, /* end frame */
+	0xff, 0xff, 0xff, 0xff /* end frame */
+};
+
+void ClearPixels()
+{
+	for(uint16_t ledIndex = 0; ledIndex < 576; ledIndex++) {
+		pixels[ledIndex] = 0;
+	}
+}
+
+void GenerateTestSPISignal()
+{
+
+	uint8_t led_frame_size = 4;
+	uint8_t brightness = 0b11100001;
+	//uint8_t brightness = 0b11100111;
+
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+
+        HAL_SPI_Transmit(&spi, start_frame_data, led_frame_size * 2, HAL_MAX_DELAY);
+
+	uint8_t off_led_data[] = {
+		brightness, 0x00, 0x00, 0x00
+	};
+
+	for(uint16_t led_count = 0; led_count < 576; led_count++) {
+		if(pixels[led_count] > 0) {
+			uint8_t led_data[] = {
+				brightness, 0x10, 0x10, 0x10
+			};
+			HAL_SPI_Transmit(&spi, led_data, led_frame_size, HAL_MAX_DELAY);
+		} else {
+			HAL_SPI_Transmit(&spi, off_led_data, led_frame_size, HAL_MAX_DELAY);
+		}
+	}
+
+        HAL_SPI_Transmit(&spi, end_frame_data, led_frame_size * 8, HAL_MAX_DELAY);
+
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+
+        //HAL_Delay(10);
+
+}
+
+uint16_t xyToLedIndex(uint8_t x, uint8_t y) {
+	uint16_t ledIndex = 0;
+	if(y < 8) {
+		ledIndex = (x * 8) + y;
+	} else if(y < 16) {
+		ledIndex = 192 + (x * 8) + (y - 8);
+	} else {
+		ledIndex = 384 + (x * 8) + (y - 16);
+	}
+
+	if(ledIndex >= 576) {
+		ledIndex = 0;
+	}
+
+	return ledIndex;
+}
+
+const uint8_t maxRadius = 12;
+
+float rotation = 0;
+uint8_t radius = 12;
+void rotateLine() {
+	uint16_t ledIndex = 0;
+	uint8_t x = 0;
+	uint8_t y = 0;
+
+	for(int i = maxRadius; i >= radius; i--) {
+		x = maxRadius + (sin(rotation) * i);
+		y = maxRadius + (cos(rotation) * i);
+
+		ledIndex = xyToLedIndex(x, y);
+		pixels[ledIndex] = 1;
+	}
+
+	rotation += 0.1;
+	if(rotation > 6.28) {
+		rotation = 0;
+		radius--;
+		if(radius <= 1) {
+			radius = maxRadius;
+		}
+	}
+}
+
+struct Particle {
+	uint8_t x;
+	uint8_t y;
+};
+
+static const uint8_t maxParticles = 32;
+struct Particle* particles[32];
+void rain() {
+	int makeNewParticle = rand();
+	if(makeNewParticle > RAND_MAX / 4) {
+		for(int i = 0; i < maxParticles; i++) {
+			if(particles[i] == NULL) {
+				particles[i] = malloc(sizeof(struct Particle));
+				particles[i]->x = rand() % 24;
+				particles[i]->y = 0;
+
+				break;
+			}
+		}
+	}
+
+	for(int i = 0; i < maxParticles; i++) {
+		if(particles[i] != NULL) {
+			uint16_t ledIndex = xyToLedIndex(particles[i]->x, particles[i]->y);
+			pixels[ledIndex] = 1;
+
+			particles[i]->y++;
+			if(particles[i]->y >= 24) {
+				free(particles[i]);
+				particles[i] = NULL;
+			}
+		}
+	}
+}
+
 
 /* USER CODE END 0 */
 
@@ -116,10 +264,38 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 
+    __HAL_RCC_SPI2_CLK_ENABLE();
+
+    GPIO_InitStruct.Pin       = GPIO_PIN_14 | GPIO_PIN_13 | GPIO_PIN_15;
+    GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull      = GPIO_PULLUP;
+    GPIO_InitStruct.Speed     = GPIO_SPEED_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
+ 
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    
+    GPIO_InitStruct.Pin  = GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_12;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    //GPIO_InitStruct.Alternate = GPIO_AF0_SYS;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    //__SPI1_CLK_ENABLE();
+    __SPI2_CLK_ENABLE();
+    spi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+    spi.Init.Direction = SPI_DIRECTION_2LINES;
+    spi.Init.CLKPhase = SPI_PHASE_1EDGE;
+    spi.Init.CLKPolarity = SPI_POLARITY_HIGH;
+    spi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLED;
+    spi.Init.DataSize = SPI_DATASIZE_8BIT;
+    spi.Init.FirstBit = SPI_FIRSTBIT_MSB;
+    spi.Init.NSS = SPI_NSS_SOFT;
+    spi.Init.TIMode = SPI_TIMODE_DISABLED;
+    spi.Init.Mode = SPI_MODE_MASTER;
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
 
     GPIO_InitStruct.Pin  = GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_12;
@@ -136,12 +312,18 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
+	ClearPixels();
+	rain();
 
+	GenerateTestSPISignal();
+
+/*
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
         HAL_Delay(200);
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
         HAL_Delay(200);
+*/
 
   }
   /* USER CODE END 3 */
@@ -200,6 +382,30 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+/* SPI2 init function */
+static void MX_SPI2_Init(void)
+{
+
+  /* SPI2 parameter configuration*/
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_MASTER;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.NSS = SPI_NSS_SOFT;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi2.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /** Configure pins as 
         * Analog 
         * Input 
@@ -217,19 +423,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PB4 PB6 PB7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7;
+  /*Configure GPIO pins : PB4 PB5 PB6 PB7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PB5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_5;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }

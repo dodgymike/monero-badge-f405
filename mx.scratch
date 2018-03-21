@@ -73,6 +73,9 @@
 		   <group>
 		 		<name>STM32F4xx_HAL_Driver</name>
 						<file>
+							<name>Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c</name>
+						</file>
+						<file>
 							<name>Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c</name>
 						</file>
 						<file>
