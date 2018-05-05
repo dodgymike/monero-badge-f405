@@ -99,6 +99,112 @@ static uint8_t end_frame_data[] = {
 	0xff, 0xff, 0xff, 0xff /* end frame */
 };
 
+struct AccRingBuffer {
+	int16_t x;
+	int16_t y;
+	int16_t z;
+
+	struct AccRingBuffer* next;
+};
+struct AccRingBuffer* accRingBuffer;
+
+void initRingBufferEntry(struct AccRingBuffer* ringBufferEntry) {
+	ringBufferEntry->x = 0;
+	ringBufferEntry->y = 0;
+	ringBufferEntry->z = 0;
+
+	ringBufferEntry->next = NULL;
+}
+
+void initAccRingBuffer(uint8_t bufferSize) {
+	accRingBuffer = malloc(sizeof(struct AccRingBuffer));
+	struct AccRingBuffer* curAccRingBuffer = accRingBuffer;
+	initRingBufferEntry(curAccRingBuffer);
+
+	while(bufferSize-- > 1) {
+		struct AccRingBuffer* nextAccRingBuffer = malloc(sizeof(struct AccRingBuffer));
+		initRingBufferEntry(nextAccRingBuffer);
+
+		nextAccRingBuffer->next = accRingBuffer;
+		curAccRingBuffer->next = nextAccRingBuffer;
+
+		curAccRingBuffer = nextAccRingBuffer;
+	}
+}
+
+void moveToNextAccRingBufferEntry() {
+	struct AccRingBuffer* nextAccRingBuffer = accRingBuffer->next;
+	accRingBuffer = nextAccRingBuffer;
+}
+
+void calculateMeans(uint8_t bufferSize, uint16_t* ret_x, uint16_t* ret_y, uint16_t* ret_z) {
+	uint32_t x = 0;
+	uint32_t y = 0;
+	uint32_t z = 0;
+
+	for(int i = 0; i < bufferSize; i++) {
+		printf("arb x (%d) y (%d) z (%d)\n", accRingBuffer->x, accRingBuffer->y, accRingBuffer->z);
+		x += accRingBuffer->x;
+		y += accRingBuffer->y;
+		z += accRingBuffer->z;
+
+		moveToNextAccRingBufferEntry();
+	}
+
+	x /= bufferSize;
+	y /= bufferSize;
+	z /= bufferSize;
+
+	(*ret_x) = x;
+	(*ret_y) = y;
+	(*ret_z) = z;
+}
+
+void calculateStdDevs(uint8_t bufferSize, uint16_t* mean_x, uint16_t* mean_y, uint16_t* mean_z, uint16_t* ret_x, uint16_t* ret_y, uint16_t* ret_z) {
+	uint32_t total_diff_x = 0;
+	uint32_t total_diff_y = 0;
+	uint32_t total_diff_z = 0;
+
+	for(int i = 0; i < bufferSize; i++) {
+		total_diff_x += pow(accRingBuffer->x - *mean_x, 2);
+		total_diff_y += pow(accRingBuffer->y - *mean_y, 2);
+		total_diff_z += pow(accRingBuffer->z - *mean_z, 2);
+
+		moveToNextAccRingBufferEntry();
+	}
+
+	total_diff_x /= bufferSize;
+	total_diff_y /= bufferSize;
+	total_diff_z /= bufferSize;
+
+	(*ret_x) = sqrt(total_diff_x);
+	(*ret_y) = sqrt(total_diff_y);
+	(*ret_z) = sqrt(total_diff_z);
+}
+ void removeOutliers(uint8_t bufferSize, uint16_t* mean_x, uint16_t* mean_y, uint16_t* mean_z, uint16_t* std_x, uint16_t* std_y, uint16_t* std_z) {
+        for(int i = 0; i < bufferSize; i++) {
+		if(accRingBuffer->x > (*mean_x + 2 * *std_x)) {
+			accRingBuffer->x = (*mean_x + 2 * *std_x);
+		} else if(accRingBuffer->x < (*mean_x - 2 * *std_x)) {
+			accRingBuffer->x = (*mean_x - 2 * *std_x);
+		}
+
+		if(accRingBuffer->y > (*mean_y + 2 * *std_y)) {
+			accRingBuffer->y = (*mean_y + 2 * *std_y);
+		} else if(accRingBuffer->y < (*mean_y - 2 * *std_y)) {
+			accRingBuffer->y = (*mean_y - 2 * *std_y);
+		}
+
+		if(accRingBuffer->z > (*mean_z + 2 * *std_z)) {
+			accRingBuffer->z = (*mean_z + 2 * *std_z);
+		} else if(accRingBuffer->z < (*mean_z - 2 * *std_z)) {
+			accRingBuffer->z = (*mean_z - 2 * *std_z);
+		}
+
+                moveToNextAccRingBufferEntry();
+        }
+}
+
 void serialSend(int8_t* buffer) {
         //HAL_UART_Receive(&huart2, buffer, sizeof(buffer), HAL_MAX_DELAY);
         //HAL_UART_Transmit(&huart6, buffer, 2, HAL_MAX_DELAY);
@@ -252,7 +358,7 @@ void initMPU6000() {
 
 void readAcc(int16_t *accData)
 {
-    int8_t data[6];
+    int16_t data[6];
 
     spiBusReadRegisterBuffer(&hspi1, MPU_RA_ACCEL_XOUT_H, (uint8_t*)&data, 6); 
 /*
@@ -508,6 +614,17 @@ int main(void)
   initMPU6000();
   serialSend("DONE\r\n");
 
+  int bufferSize = 40;
+  initAccRingBuffer(bufferSize);
+
+  int16_t mean_x = 0;
+  int16_t mean_y = 0;
+  int16_t mean_z = 0;
+
+  int16_t std_x = 0;
+  int16_t std_y = 0;
+  int16_t std_z = 0;
+
   int16_t accData[3];
   /* USER CODE END 2 */
 
@@ -524,14 +641,76 @@ int main(void)
 	readAcc(&accData);
 	//serialSend("Done\r\n");
 
+
+        calculateMeans(bufferSize, &mean_x, &mean_y, &mean_z);
+        calculateStdDevs(bufferSize, &mean_x, &mean_y, &mean_z, &std_x, &std_y, &std_z);
+
 /*
-	uint8_t accDebugString[40];
-	sprintf(accDebugString, "x (%0.6d) y (%0.6d) z (%0.6d)\r\n", accData[0], accData[1], accData[2]);
-	serialSend(accDebugString);
+	if(accData[0] > (mean_x - std_x)) {
+		accRingBuffer->x = mean_x - std_x;
+	} else if(accData[0] < (mean_x + std_x)) {
+		accRingBuffer->x = mean_x + std_x;
+	} else {
+		accRingBuffer->x = accData[0];
+	}
+
+	if(accData[1] > (mean_y - std_y)) {
+		accRingBuffer->y = mean_y - std_y;
+	} else if(accData[1] < (mean_y + std_y)) {
+		accRingBuffer->y = mean_y + std_y;
+	} else {
+		accRingBuffer->y = accData[1];
+	}
+
+	if(accData[2] > (mean_z - std_z)) {
+		accRingBuffer->z = mean_z - std_z;
+	} else if(accData[2] < (mean_z + std_z)) {
+		accRingBuffer->z = mean_z + std_z;
+	} else {
+		accRingBuffer->z = accData[2];
+	}
 */
 
+	if(std_x == 0) {
+		std_x = 3000;
+	}
+	if(std_y == 0) {
+		std_y = 3000;
+	}
+	if(std_z == 0) {
+		std_z = 3000;
+	}
+
+	if((accData[0] < (mean_x + std_x)) && ((accData[0] > (mean_x - std_x)))) {
+		accRingBuffer->x = accData[0];
+	} else {
+		accRingBuffer->x = accData[0] * 0.1;
+	}
+
+	if((accData[1] < (mean_y + std_y)) && ((accData[1] > (mean_y - std_y)))) {
+		accRingBuffer->y = accData[1];
+	} else {
+		accRingBuffer->y = accData[1] * 0.1;
+	}
+
+	if((accData[2] < (mean_z + std_z)) && ((accData[2] > (mean_z - std_z)))) {
+		accRingBuffer->z = accData[2];
+	} else {
+		accRingBuffer->z = accData[2] * 0.1;
+	}
+
+	moveToNextAccRingBufferEntry();
+
+        //removeOutliers(bufferSize, &mean_x, &mean_y, &mean_z, &std_x, &std_y, &std_z);
+
+	uint8_t accDebugString[40];
+	//sprintf(accDebugString, "x (%0.6d) y (%0.6d) z (%0.6d)\r\n", accData[0], accData[1], accData[2]);
+	sprintf(accDebugString, "x (%0.6d) y (%0.6d) z (%0.6d)\r\n", mean_x, mean_y, mean_z);
+	serialSend(accDebugString);
+
 	ClearPixels();
-	rain(accData[0], accData[1]);
+	//rain(accData[0], accData[1]);
+	rain(mean_x, mean_y);
 
 	GenerateTestSPISignal();
 
