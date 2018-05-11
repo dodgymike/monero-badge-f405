@@ -410,7 +410,7 @@ void GenerateTestSPISignal()
 	for(uint16_t led_count = 0; led_count < 576; led_count++) {
 		if(pixels[led_count] > 0) {
 			uint8_t led_data[] = {
-				brightness, 0x10, 0x10, 0x10
+				brightness, 0x10, 0x50, 0x10
 			};
 			HAL_SPI_Transmit(&hspi2, led_data, led_frame_size, HAL_MAX_DELAY);
 		} else {
@@ -428,12 +428,21 @@ void GenerateTestSPISignal()
 
 uint16_t xyToLedIndex(uint8_t x, uint8_t y) {
 	uint16_t ledIndex = 0;
+/*
 	if(y < 8) {
 		ledIndex = (x * 8) + y;
 	} else if(y < 16) {
 		ledIndex = 192 + (x * 8) + (y - 8);
 	} else {
 		ledIndex = 384 + (x * 8) + (y - 16);
+	}
+*/
+
+	ledIndex = y * 24;
+	if(y % 2 == 0) {
+		ledIndex += x;
+	} else {
+		ledIndex += 23 - x;
 	}
 
 	if(ledIndex >= 576) {
@@ -701,16 +710,18 @@ int main(void)
 
         //removeOutliers(bufferSize, &mean_x, &mean_y, &mean_z, &std_x, &std_y, &std_z);
 
-	uint8_t accDebugString[40];
+	uint8_t accDebugString[60];
 	//sprintf(accDebugString, "x (%0.6d) y (%0.6d) z (%0.6d)\r\n", accData[0], accData[1], accData[2]);
-	sprintf(accDebugString, "x (%0.6d) y (%0.6d) z (%0.6d)\r\n", mean_x, mean_y, mean_z);
+	sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
 	//serialSend(accDebugString);
 
 	ClearPixels();
 	//rain(accData[0], accData[1]);
 	rain(mean_x, mean_y);
 
-	GenerateTestSPISignal();
+	//if(HAL_GetTick() % 1000) {
+		GenerateTestSPISignal();
+	//}
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
         HAL_Delay(1);
@@ -747,6 +758,7 @@ int main(void)
 	serialSend(buttonDebugString);
 
 /*
+	HAL_Delay(500);
 */
 
   }
