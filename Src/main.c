@@ -113,6 +113,13 @@ static uint8_t end_frame_data[] = {
 	0xff, 0xff, 0xff, 0xff /* end frame */
 };
 
+struct SnakePlayer {
+};
+
+struct SnakeGame {
+	struct SnakePlayer player;
+};
+
 struct AccRingBuffer {
 	int16_t x;
 	int16_t y;
@@ -561,6 +568,45 @@ void rain(int xAcc, int yAcc, uint32_t rainColour) {
 	}
 }
 
+uint16_t readButtons() {
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+        //HAL_Delay(1);
+
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+        //HAL_Delay(1);
+
+	// load   2 - PB1
+	// signal 1 - PB0
+	// clock  3 - PA3
+
+       	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+
+	// latch the input buttons
+	int delayDuration = 10;
+	int delayCount = 0;
+	//int8_t buttonDebugString[40];
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+
+	uint16_t buttonBits = 0;
+        for(int bitCount = 0; bitCount < 16; bitCount++) {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
+		uint16_t buttonBit = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
+
+		buttonBits |= (buttonBit) << bitCount;
+		//buttonDebugString[bitCount] = buttonBit ? '1' : '0';
+	}
+	/*
+	buttonDebugString[16] = '\r';
+	buttonDebugString[17] = '\n';
+	buttonDebugString[18] = 0;
+	serialSend(buttonDebugString);
+	*/
+
+	return buttonBits;
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -658,7 +704,7 @@ int main(void)
   int bufferSize = 40;
   initAccRingBuffer(bufferSize);
 
-  int16_t mean_x = 0;
+  int16_t mean_x = 1;
   int16_t mean_y = 0;
   int16_t mean_z = 0;
 
@@ -668,7 +714,7 @@ int main(void)
 
   int16_t accData[3];
 
-	uint32_t rainBrightness = 0b11100000;
+	uint32_t rainBrightness = 0b11100001;
 	uint32_t rainRed = 5;
 	uint32_t rainGreen = 5;
 	uint32_t rainBlue = 5;
@@ -690,12 +736,14 @@ int main(void)
 	//serialSend("Loop\r\n");
 
 	//serialSend("Reading from acc: ");
-	readAcc(&accData);
+	//readAcc(&accData);
 	//serialSend("Done\r\n");
 
 
+	/*
         calculateMeans(bufferSize, &mean_x, &mean_y, &mean_z);
         calculateStdDevs(bufferSize, &mean_x, &mean_y, &mean_z, &std_x, &std_y, &std_z);
+	*/
 
 /*
 	if(accData[0] > (mean_x - std_x)) {
@@ -723,6 +771,7 @@ int main(void)
 	}
 */
 
+/*
 	if(std_x == 0) {
 		std_x = 3000;
 	}
@@ -754,49 +803,19 @@ int main(void)
 	moveToNextAccRingBufferEntry();
 
         //removeOutliers(bufferSize, &mean_x, &mean_y, &mean_z, &std_x, &std_y, &std_z);
+*/
 
-	uint8_t accDebugString[60];
+	//uint8_t accDebugString[60];
 	//sprintf(accDebugString, "x (%0.6d) y (%0.6d) z (%0.6d)\r\n", accData[0], accData[1], accData[2]);
-	sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
+	//sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
 	//serialSend(accDebugString);
 
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-        //HAL_Delay(1);
-
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-        //HAL_Delay(1);
-
-	// load   2 - PB1
-	// signal 1 - PB0
-	// clock  3 - PA3
-
-       	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-
-	// latch the input buttons
-	int delayDuration = 10;
-	int delayCount = 0;
-	int8_t buttonDebugString[40];
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-
-	uint16_t buttonBits = 0;
-        for(int bitCount = 0; bitCount < 16; bitCount++) {
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
-		uint16_t buttonBit = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
-
-		buttonBits |= (buttonBit) << bitCount;
-		buttonDebugString[bitCount] = buttonBit ? '1' : '0';
-	}
-	buttonDebugString[16] = '\r';
-	buttonDebugString[17] = '\n';
-	buttonDebugString[18] = 0;
-	serialSend(buttonDebugString);
 
 	if(HAL_GetTick() - last_tick > 50) {
 		last_tick = HAL_GetTick();
 		ClearPixels();
 
+		uint16_t buttonBits = readButtons();
 		uint16_t populatedButtonBits = buttonBits & 0b0111111111100000;
 
 		if(populatedButtonBits) {
