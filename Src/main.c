@@ -76,6 +76,9 @@ static void MX_SPI1_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+static uint16_t missingLeds[] = { 460, 461 };
+static uint8_t missingLedCount = 2;
+
 static uint32_t pixels[576];
 
 static uint8_t start_frame_data[] = {
@@ -429,6 +432,7 @@ void GenerateTestSPISignal()
 uint16_t xyToLedIndex(uint8_t x, uint8_t y) {
 	uint16_t ledIndex = 0;
 /*
+	// for 8x8 panels in 3x3 configuration
 	if(y < 8) {
 		ledIndex = (x * 8) + y;
 	} else if(y < 16) {
@@ -447,6 +451,16 @@ uint16_t xyToLedIndex(uint8_t x, uint8_t y) {
 
 	if(ledIndex >= 576) {
 		ledIndex = 0;
+	}
+
+	if(missingLedCount > 0) {
+		uint16_t originalLedIndex = ledIndex;
+
+		for(int i = 0; i < missingLedCount; i++) {
+			if(originalLedIndex >= missingLeds[i]) {
+				ledIndex--;
+			}
+		}
 	}
 
 	return ledIndex;
