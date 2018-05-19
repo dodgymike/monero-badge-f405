@@ -410,7 +410,7 @@ void GenerateTestSPISignal()
 	for(uint16_t led_count = 0; led_count < 576; led_count++) {
 		if(pixels[led_count] > 0) {
 			uint8_t led_data[] = {
-				brightness, 0x10, 0x50, 0x10
+				brightness, 0x05, 0x05, 0x05
 			};
 			HAL_SPI_Transmit(&hspi2, led_data, led_frame_size, HAL_MAX_DELAY);
 		} else {
@@ -630,6 +630,8 @@ int main(void)
 
   int16_t accData[3];
 
+	uint32_t last_tick = HAL_GetTick();
+
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
   //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
@@ -715,19 +717,21 @@ int main(void)
 	sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
 	//serialSend(accDebugString);
 
-	ClearPixels();
-	//rain(accData[0], accData[1]);
-	rain(mean_x, mean_y);
+	if(HAL_GetTick() - last_tick > 50) {
+		last_tick = HAL_GetTick();
 
-	//if(HAL_GetTick() % 1000) {
+		ClearPixels();
+		//rain(accData[0], accData[1]);
+		rain(mean_x, mean_y);
+
 		GenerateTestSPISignal();
-	//}
+	}
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-        HAL_Delay(1);
+        //HAL_Delay(1);
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-        HAL_Delay(1);
+        //HAL_Delay(1);
 
 	// load   2 - PB1
 	// signal 1 - PB0
@@ -736,18 +740,17 @@ int main(void)
        	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 
 	// latch the input buttons
+	int delayDuration = 10;
+	int delayCount = 0;
 	int8_t buttonDebugString[40];
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
-	HAL_Delay(1);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-	HAL_Delay(1);
+
 	uint16_t buttonBits = 0;
         for(int bitCount = 0; bitCount < 16; bitCount++) {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
-		HAL_Delay(1);
 		uint16_t buttonBit = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
-		HAL_Delay(1);
 
 		buttonBits |= (buttonBit) << bitCount;
 		buttonDebugString[bitCount] = buttonBit ? '1' : '0';
