@@ -400,9 +400,7 @@ void readAcc(int16_t *accData)
 }
 
 uint32_t rgbToPixel(uint32_t brightness, uint32_t red, uint32_t green, uint32_t blue) {
-	//brightness |= 0b00000111;
-
-	return (brightness << 24) + (red << 16) + (green << 8) + blue;
+	return ((brightness | 11100000) << 24) + (red << 16) + (green << 8) + blue;
 }
 
 void ClearPixels()
@@ -431,7 +429,7 @@ void GenerateTestSPISignal()
 
 	for(uint16_t led_count = 0; led_count < 576; led_count++) {
 		if(pixels[led_count] > 0) {
-			//uint8_t brightness = (pixels[led_count] >> 24) & 0xff;
+			uint8_t brightness = (pixels[led_count] >> 24) & 0xff;
 			uint8_t red = (pixels[led_count] >> 16) & 0xff;
 			uint8_t green = (pixels[led_count] >> 8) & 0xff;
 			uint8_t blue = pixels[led_count] & 0xff;
@@ -670,7 +668,7 @@ int main(void)
 
   int16_t accData[3];
 
-	uint32_t rainBrightness = 0b11100001;
+	uint32_t rainBrightness = 0b11100000;
 	uint32_t rainRed = 5;
 	uint32_t rainGreen = 5;
 	uint32_t rainBlue = 5;
@@ -811,11 +809,13 @@ int main(void)
 			}			
 
 			if(BUTTON_SELECT & populatedButtonBits) {
-				if(rainBrightness > 0) {
+				//rainBrightness = 0b11100000;
+				if(rainBrightness > 0b11100000) {
 					rainBrightness--;
 				}
 			}
 			if(BUTTON_START & populatedButtonBits) {
+				//rainBrightness = 0b11111111;
 				if(rainBrightness < 254) {
 					rainBrightness++;
 				}
