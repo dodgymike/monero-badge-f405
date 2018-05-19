@@ -81,16 +81,22 @@ static uint8_t missingLedCount = 2;
 
 static uint32_t pixels[576];
 
-		uint16_t BUTTON_SELECT = 0b0000000000100000;
-		uint16_t BUTTON_START  = 0b0000000001000000;
-		uint16_t BUTTON_R4     = 0b0000000010000000;
-		uint16_t BUTTON_R3     = 0b0000000100000000;
-		uint16_t BUTTON_R2     = 0b0000001000000000;
-		uint16_t BUTTON_R1     = 0b0000010000000000;
-		uint16_t BUTTON_L4     = 0b0000100000000000;
-		uint16_t BUTTON_L3     = 0b0001000000000000;
-		uint16_t BUTTON_L2     = 0b0010000000000000;
-		uint16_t BUTTON_L1     = 0b0100000000000000;
+uint16_t BUTTON_SELECT = 0b0000000000100000;
+uint16_t BUTTON_START  = 0b0000000001000000;
+uint16_t BUTTON_R4     = 0b0000000010000000;
+uint16_t BUTTON_R3     = 0b0000000100000000;
+uint16_t BUTTON_R2     = 0b0000001000000000;
+uint16_t BUTTON_R1     = 0b0000010000000000;
+uint16_t BUTTON_L4     = 0b0000100000000000;
+uint16_t BUTTON_L3     = 0b0001000000000000;
+uint16_t BUTTON_L2     = 0b0010000000000000;
+uint16_t BUTTON_L1     = 0b0100000000000000;
+
+#define MODE_RAIN     0b0000000000000001
+#define MODE_SNAKE    0b0000000000000010
+#define MODE_BLIND    0b0000000000000100
+#define MODE_RANDOM   0b0000000000001000
+
 
 static uint8_t start_frame_data[] = {
 	0x00, 0x00, 0x00, 0x00, /* start frame */
@@ -528,6 +534,18 @@ struct Particle {
 	uint8_t y;
 };
 
+void blind(uint32_t colour) {
+	for(int i = 0; i < 576; i++) {
+		pixels[i] = colour;
+	}
+}
+
+void random_pixels(uint32_t colour) {
+	for(int i = 0; i < 576; i++) {
+		pixels[i] = colour;
+	}
+}
+
 static const uint8_t maxParticles = 32;
 struct Particle* particles[32];
 void rain(int xAcc, int yAcc, uint32_t rainColour) {
@@ -714,6 +732,8 @@ int main(void)
 
   int16_t accData[3];
 
+	uint16_t gameMode = MODE_RAIN;
+
 	uint32_t rainBrightness = 0b11100001;
 	uint32_t rainRed = 5;
 	uint32_t rainGreen = 5;
@@ -828,16 +848,20 @@ int main(void)
 			}			
 
 			if(BUTTON_SELECT & populatedButtonBits) {
-				//rainBrightness = 0b11100000;
-				if(rainBrightness > 0b11100000) {
-					rainBrightness--;
+				switch(gameMode) {
+					case MODE_RAIN:
+						gameMode = MODE_BLIND;
+						break;
+					case MODE_BLIND:
+						gameMode = MODE_RANDOM;
+						break;
+					case MODE_RANDOM:
+						gameMode = MODE_RAIN;
+						break;
 				}
 			}
 			if(BUTTON_START & populatedButtonBits) {
-				//rainBrightness = 0b11111111;
-				if(rainBrightness < 254) {
-					rainBrightness++;
-				}
+				rainBrightness <<= 1;
 			}
 			if(BUTTON_L4 & populatedButtonBits) {
 				if(rainRed > 0) {
@@ -871,7 +895,13 @@ int main(void)
 			}
 		} else {
 			//rain(accData[0], accData[1]);
-			rain(mean_x, mean_y, rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue));
+			if(gameMode == MODE_RAIN) {
+				rain(mean_x, mean_y, rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue));
+			} else if(gameMode == MODE_BLIND) {
+				blind(rgbToPixel(rainBrightness, 0xff, 0xff, 0xff));
+			} else if(gameMode == MODE_RANDOM) {
+				random_pixels(rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue));
+			}
 		}
 		GenerateTestSPISignal();
 	}
