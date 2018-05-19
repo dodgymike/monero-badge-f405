@@ -81,6 +81,17 @@ static uint8_t missingLedCount = 2;
 
 static uint32_t pixels[576];
 
+		uint16_t BUTTON_SELECT = 0b0000000000100000;
+		uint16_t BUTTON_START  = 0b0000000001000000;
+		uint16_t BUTTON_R4     = 0b0000000010000000;
+		uint16_t BUTTON_R3     = 0b0000000100000000;
+		uint16_t BUTTON_R2     = 0b0000001000000000;
+		uint16_t BUTTON_R1     = 0b0000010000000000;
+		uint16_t BUTTON_L4     = 0b0000100000000000;
+		uint16_t BUTTON_L3     = 0b0001000000000000;
+		uint16_t BUTTON_L2     = 0b0010000000000000;
+		uint16_t BUTTON_L1     = 0b0100000000000000;
+
 static uint8_t start_frame_data[] = {
 	0x00, 0x00, 0x00, 0x00, /* start frame */
 	0x00, 0x00, 0x00, 0x00, /* start frame */
@@ -388,6 +399,12 @@ void readAcc(int16_t *accData)
 */
 }
 
+uint32_t rgbToPixel(uint32_t brightness, uint32_t red, uint32_t green, uint32_t blue) {
+	//brightness |= 0b00000111;
+
+	return (brightness << 24) + (red << 16) + (green << 8) + blue;
+}
+
 void ClearPixels()
 {
 	for(uint16_t ledIndex = 0; ledIndex < 576; ledIndex++) {
@@ -407,13 +424,21 @@ void GenerateTestSPISignal()
         HAL_SPI_Transmit(&hspi2, start_frame_data, led_frame_size * 2, HAL_MAX_DELAY);
 
 	uint8_t off_led_data[] = {
+		//0x11100000, 0x00, 0x00, 0x00
+		//brightness, 0x00, 0x00, 0x00
 		brightness, 0x00, 0x00, 0x00
 	};
 
 	for(uint16_t led_count = 0; led_count < 576; led_count++) {
 		if(pixels[led_count] > 0) {
+			//uint8_t brightness = (pixels[led_count] >> 24) & 0xff;
+			uint8_t red = (pixels[led_count] >> 16) & 0xff;
+			uint8_t green = (pixels[led_count] >> 8) & 0xff;
+			uint8_t blue = pixels[led_count] & 0xff;
+
 			uint8_t led_data[] = {
-				brightness, 0x05, 0x05, 0x05
+				//brightness, 0x05, 0x05, 0x05
+				brightness, red, green, blue
 			};
 			HAL_SPI_Transmit(&hspi2, led_data, led_frame_size, HAL_MAX_DELAY);
 		} else {
@@ -500,7 +525,7 @@ struct Particle {
 
 static const uint8_t maxParticles = 32;
 struct Particle* particles[32];
-void rain(int xAcc, int yAcc) {
+void rain(int xAcc, int yAcc, uint32_t rainColour) {
 	int makeNewParticle = rand();
 	if(makeNewParticle > RAND_MAX / 4) {
 		for(int i = 0; i < maxParticles; i++) {
@@ -521,7 +546,8 @@ void rain(int xAcc, int yAcc) {
 	for(int i = 0; i < maxParticles; i++) {
 		if(particles[i] != NULL) {
 			uint16_t ledIndex = xyToLedIndex(particles[i]->x, particles[i]->y);
-			pixels[ledIndex] = 1;
+			//pixels[ledIndex] = 1;
+			pixels[ledIndex] = rainColour;
 
 			if(xAcc >= 0) {
 				particles[i]->y++;
@@ -644,6 +670,11 @@ int main(void)
 
   int16_t accData[3];
 
+	uint32_t rainBrightness = 0b11100001;
+	uint32_t rainRed = 5;
+	uint32_t rainGreen = 5;
+	uint32_t rainBlue = 5;
+
 	uint32_t last_tick = HAL_GetTick();
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
@@ -731,16 +762,6 @@ int main(void)
 	sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
 	//serialSend(accDebugString);
 
-	if(HAL_GetTick() - last_tick > 50) {
-		last_tick = HAL_GetTick();
-
-		ClearPixels();
-		//rain(accData[0], accData[1]);
-		rain(mean_x, mean_y);
-
-		GenerateTestSPISignal();
-	}
-
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
         //HAL_Delay(1);
 
@@ -773,6 +794,70 @@ int main(void)
 	buttonDebugString[17] = '\n';
 	buttonDebugString[18] = 0;
 	serialSend(buttonDebugString);
+
+	if(HAL_GetTick() - last_tick > 50) {
+		last_tick = HAL_GetTick();
+		ClearPixels();
+
+		uint16_t populatedButtonBits = buttonBits & 0b0111111111100000;
+
+		if(populatedButtonBits) {
+			for(int i = 0; i < 16; i++) {
+				if(populatedButtonBits & (1 << i)) {
+					for(int y = 0; y < 24; y++) {
+						pixels[xyToLedIndex(i, y)] = rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue);
+					}
+				}
+			}			
+
+			if(BUTTON_SELECT & populatedButtonBits) {
+				if(rainBrightness > 0) {
+					rainBrightness--;
+				}
+			}
+			if(BUTTON_START & populatedButtonBits) {
+				if(rainBrightness < 254) {
+					rainBrightness++;
+				}
+			}
+			if(BUTTON_L4 & populatedButtonBits) {
+				if(rainRed > 0) {
+					rainRed--;
+				}
+			}
+			if(BUTTON_L2 & populatedButtonBits) {
+				if(rainRed < 254) {
+					rainRed++;
+				}
+			}
+			if(BUTTON_R4 & populatedButtonBits) {
+				if(rainGreen > 0) {
+					rainGreen--;
+				}
+			}
+			if(BUTTON_R2 & populatedButtonBits) {
+				if(rainGreen < 254) {
+					rainGreen++;
+				}
+			}
+			if(BUTTON_R1 & populatedButtonBits) {
+				if(rainBlue > 0) {
+					rainBlue--;
+				}
+			}
+			if(BUTTON_R3 & populatedButtonBits) {
+				if(rainBlue < 254) {
+					rainBlue++;
+				}
+			}
+		} else {
+			//rain(accData[0], accData[1]);
+			rain(mean_x, mean_y, rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue));
+		}
+		GenerateTestSPISignal();
+	}
+
+
 
 /*
 	HAL_Delay(500);
