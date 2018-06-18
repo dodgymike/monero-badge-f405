@@ -593,7 +593,7 @@ uint16_t readButtons() {
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
         //HAL_Delay(1);
 
-	// load   2 - PB1
+	// load   2 - PB5
 	// signal 1 - PB0
 	// clock  3 - PA3
 
