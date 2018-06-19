@@ -660,14 +660,34 @@ struct SnakePlayer {
 
 	uint32_t lastMovementTick;
 	uint32_t speed;
+
+	uint8_t tailSize;
+
+	struct SnakeTail* tail;
 };
 
 struct SnakeGame {
 	struct SnakePlayer players[10];
 	uint8_t snakeCount;
 
+	struct SnakeFood* snakeFood[20];
+
 	uint32_t lastTick;
 } snakeGame;
+
+struct SnakeTail {
+	struct SnakeTail* next;
+
+	int16_t x;
+	int16_t y;
+};
+
+struct SnakeFood {
+	int16_t x;
+	int16_t y;
+
+	int32_t expiryTick;
+};
 
 #define SNAKE_DIRECTION_NORTH 0
 #define SNAKE_DIRECTION_EAST  1
@@ -683,15 +703,39 @@ void initSnakePlayer(struct SnakePlayer* snakePlayer) {
 	snakePlayer->direction = 0;
 	snakePlayer->lastMovementTick = 0;
 	snakePlayer->speed = 200;
+
+	snakePlayer->tailSize = 0;
+	snakePlayer->tail = NULL;
+}
+
+void initSnakeFood(struct SnakeFood* snakeFood) {
+	snakeFood->x = rand() % 24;
+	snakeFood->y = rand() % 24;
+
+	snakeFood->expiryTick = HAL_GetTick() + 5000 + (rand() % 3000);
 }
 
 void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness) {
+	uint32_t currentTick = HAL_GetTick();
+
 	if(snakeGame.snakeCount == 0) {
 		initSnakePlayer(&(snakeGame.players[0]));
 		snakeGame.snakeCount++;
 
 		initSnakePlayer(&(snakeGame.players[1]));
 		snakeGame.snakeCount++;
+	}
+
+	for(int i = 0; i < snakeGame.snakeCount; i++) {
+		if((snakeGame.snakeFood[i] == NULL) && (rand() % 10 == 1)) {
+			snakeGame.snakeFood[i] = malloc(sizeof(struct SnakeFood));
+			initSnakeFood(snakeGame.snakeFood[i]);
+		}
+
+		if(currentTick > snakeGame.snakeFood[i]->expiryTick) {
+			free(snakeGame.snakeFood[i]);
+			snakeGame.snakeFood[i] = NULL;
+		}
 	}
 		
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1)) {
@@ -720,7 +764,6 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 		snakeGame.players[1].direction = SNAKE_DIRECTION_WEST;
 	}
 
-	uint32_t currentTick = HAL_GetTick();
 	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
 		if((currentTick - snakeGame.players[snakeIndex].lastMovementTick) > snakeGame.players[snakeIndex].speed) {
 			snakeGame.players[snakeIndex].lastMovementTick = currentTick;
@@ -758,6 +801,12 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 
 	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
 		pixels[xyToLedIndex(snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y)] = snakeGame.players[snakeIndex].colour;
+	}
+
+	for(int snakeFoodIndex = 0; snakeFoodIndex < snakeGame.snakeCount; snakeFoodIndex++) {
+		if(snakeGame.snakeFood[snakeFoodIndex] != NULL) {
+			pixels[xyToLedIndex(snakeGame.snakeFood[snakeFoodIndex]->x, snakeGame.snakeFood[snakeFoodIndex]->y)] = rgbToPixel(20, 20, 0, 0);
+		}
 	}
 }
 
