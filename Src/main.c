@@ -81,16 +81,16 @@ static uint8_t missingLedCount = 2;
 
 static uint32_t pixels[576];
 
-uint16_t BUTTON_SELECT = 6;
-uint16_t BUTTON_START  = 7;
-uint16_t BUTTON_R4     = 8;
-uint16_t BUTTON_R3     = 9;
-uint16_t BUTTON_R2     = 10;
-uint16_t BUTTON_R1     = 11;
-uint16_t BUTTON_L4     = 12;
-uint16_t BUTTON_L3     = 13;
-uint16_t BUTTON_L2     = 14;
-uint16_t BUTTON_L1     = 15;
+uint16_t BUTTON_SELECT = 5;
+uint16_t BUTTON_START  = 6;
+uint16_t BUTTON_R4     = 7;
+uint16_t BUTTON_R3     = 8;
+uint16_t BUTTON_R2     = 9;
+uint16_t BUTTON_R1     = 10;
+uint16_t BUTTON_L4     = 11;
+uint16_t BUTTON_L3     = 12;
+uint16_t BUTTON_L2     = 13;
+uint16_t BUTTON_L1     = 14;
 
 #define MODE_RAIN     0b0000000000000001
 #define MODE_SNAKE    0b0000000000000010
@@ -639,6 +639,19 @@ uint16_t readButtons() {
 	return buttonBits;
 }
 
+uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button) {
+	uint8_t buttonPressed = 0;
+
+	if((buttonState[button] < 256) && (buttonAccumulators[button] > 256)) {
+		buttonPressed = 1;
+		buttonState[button] = 512;
+	} else if(buttonAccumulators[button] < 256) {
+		buttonState[button] = 0;
+	}
+
+	return buttonPressed;
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -853,7 +866,7 @@ int main(void)
 		last_tick = HAL_GetTick();
 		ClearPixels();
 
-		if((buttonState[BUTTON_SELECT] < 256) && (buttonAccumulators[BUTTON_SELECT] > 256)) {
+		if(buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT)) {
 			switch(gameMode) {
 				case MODE_RAIN:
 					gameMode = MODE_BLIND;
@@ -868,67 +881,42 @@ int main(void)
 					gameMode = MODE_RAIN;
 					break;
 			}
-
-			buttonState[BUTTON_SELECT] = 512;
-		} else if(buttonAccumulators[BUTTON_SELECT] < 256) {
-			buttonState[BUTTON_SELECT] = 0;
 		}
-		if((buttonState[BUTTON_START] < 256) && (buttonAccumulators[BUTTON_START] > 256)) {
+		if(buttonPressed(buttonState, buttonAccumulators, BUTTON_START)) {
 			rainBrightness <<= 1;
 			if(rainBrightness < 0) {
 				rainBrightness = 1;
 			} 
-			buttonState[BUTTON_START] = 512;
-		} else if(buttonAccumulators[BUTTON_START] < 256) {
-			buttonState[BUTTON_START] = 0;
 		}
-		if((buttonState[BUTTON_L4] < 256) && (buttonAccumulators[BUTTON_L4] > 256)) {
+		if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4)) {
 			if(rainRed > 0) {
 				rainRed--;
 			}
-			buttonState[BUTTON_L4] = 512;
-		} else if(buttonAccumulators[BUTTON_L4] < 256) {
-			buttonState[BUTTON_L4] = 0;
 		}
-		if((buttonState[BUTTON_L2] < 256) && (buttonAccumulators[BUTTON_L2] > 256)) {
+		if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2)) {
 			if(rainRed < 254) {
 				rainRed++;
 			}
-			buttonState[BUTTON_L2] = 512;
-		} else if(buttonAccumulators[BUTTON_L2] < 256) {
-			buttonState[BUTTON_L2] = 0;
 		}
-		if((buttonState[BUTTON_R4] < 256) && (buttonAccumulators[BUTTON_R4] > 256)) {
+		if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4)) {
 			if(rainGreen > 0) {
 				rainGreen--;
 			}
-			buttonState[BUTTON_R4] = 512;
-		} else if(buttonAccumulators[BUTTON_R4] < 256) {
-			buttonState[BUTTON_R4] = 0;
 		}
-		if((buttonState[BUTTON_R2] < 256) && (buttonAccumulators[BUTTON_R2] > 256)) {
+		if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2)) {
 			if(rainGreen < 254) {
 				rainGreen++;
 			}
-			buttonState[BUTTON_R2] = 512;
-		} else if(buttonAccumulators[BUTTON_R2] < 256) {
-			buttonState[BUTTON_R2] = 0;
 		}
-		if((buttonState[BUTTON_R1] < 256) && (buttonAccumulators[BUTTON_R1] > 256)) {
+		if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1)) {
 			if(rainBlue > 0) {
 				rainBlue--;
 			}
-			buttonState[BUTTON_R1] = 512;
-		} else if(buttonAccumulators[BUTTON_R1] < 256) {
-			buttonState[BUTTON_R1] = 0;
 		}
-		if((buttonState[BUTTON_R3] < 256) && (buttonAccumulators[BUTTON_R3] > 256)) {
+		if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3)) {
 			if(rainBlue < 254) {
 				rainBlue++;
 			}
-			buttonState[BUTTON_R3] = 512;
-		} else if(buttonAccumulators[BUTTON_R3] < 256) {
-			buttonState[BUTTON_R3] = 0;
 		}
 
 		//rain(accData[0], accData[1]);
