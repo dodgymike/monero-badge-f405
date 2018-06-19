@@ -97,6 +97,7 @@ uint16_t BUTTON_L1     = 14;
 #define MODE_BLIND    0b0000000000000100
 #define MODE_RANDOM   0b0000000000001000
 #define MODE_DEBUG    0b0000000000010000
+#define MODE_SNAKE    0b0000000000100000
 
 
 static uint8_t start_frame_data[] = {
@@ -118,13 +119,6 @@ static uint8_t end_frame_data[] = {
 	0xff, 0xff, 0xff, 0xff, /* end frame */
 	0xff, 0xff, 0xff, 0xff, /* end frame */
 	0xff, 0xff, 0xff, 0xff /* end frame */
-};
-
-struct SnakePlayer {
-};
-
-struct SnakeGame {
-	struct SnakePlayer player;
 };
 
 uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button) {
@@ -646,6 +640,127 @@ void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulat
 	}
 }
 
+struct SnakePlayer {
+	int16_t x;
+	int16_t y;
+	
+	uint32_t colour;
+
+	// 0 = North
+	// 1 = East
+	// 2 = South
+	// 3 = West
+	uint8_t direction;
+
+	// 0 = left buttons on home badge
+	// 1 = right buttons on home badge
+	uint32_t location;
+
+	uint8_t playing;
+
+	uint32_t lastMovementTick;
+	uint32_t speed;
+};
+
+struct SnakeGame {
+	struct SnakePlayer players[10];
+	uint8_t snakeCount;
+
+	uint32_t lastTick;
+} snakeGame;
+
+#define SNAKE_DIRECTION_NORTH 0
+#define SNAKE_DIRECTION_EAST  1
+#define SNAKE_DIRECTION_SOUTH 2
+#define SNAKE_DIRECTION_WEST  3
+
+void initSnakePlayer(struct SnakePlayer* snakePlayer) {
+	snakePlayer->playing = 1;
+	snakePlayer->x = rand() % 24;
+	snakePlayer->y = rand() % 24;
+	snakePlayer->colour = rgbToPixel(20, rand() % 255, rand() % 255, rand() % 255);
+	snakePlayer->location = 0;
+	snakePlayer->direction = 0;
+	snakePlayer->lastMovementTick = 0;
+	snakePlayer->speed = 200;
+}
+
+void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness) {
+	if(snakeGame.snakeCount == 0) {
+		initSnakePlayer(&(snakeGame.players[0]));
+		snakeGame.snakeCount++;
+
+		initSnakePlayer(&(snakeGame.players[1]));
+		snakeGame.snakeCount++;
+	}
+		
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1)) {
+		snakeGame.players[0].direction = SNAKE_DIRECTION_NORTH;
+	}
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2)) {
+		snakeGame.players[0].direction = SNAKE_DIRECTION_EAST;
+	}
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3)) {
+		snakeGame.players[0].direction = SNAKE_DIRECTION_SOUTH;
+	}
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4)) {
+		snakeGame.players[0].direction = SNAKE_DIRECTION_WEST;
+	}
+
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1)) {
+		snakeGame.players[1].direction = SNAKE_DIRECTION_NORTH;
+	}
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2)) {
+		snakeGame.players[1].direction = SNAKE_DIRECTION_EAST;
+	}
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3)) {
+		snakeGame.players[1].direction = SNAKE_DIRECTION_SOUTH;
+	}
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4)) {
+		snakeGame.players[1].direction = SNAKE_DIRECTION_WEST;
+	}
+
+	uint32_t currentTick = HAL_GetTick();
+	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
+		if((currentTick - snakeGame.players[snakeIndex].lastMovementTick) > snakeGame.players[snakeIndex].speed) {
+			snakeGame.players[snakeIndex].lastMovementTick = currentTick;
+
+			switch(snakeGame.players[snakeIndex].direction) {
+				case SNAKE_DIRECTION_NORTH:
+					snakeGame.players[snakeIndex].y--;
+					break;
+				case SNAKE_DIRECTION_EAST:
+					snakeGame.players[snakeIndex].x++;
+					break;
+				case SNAKE_DIRECTION_WEST:
+					snakeGame.players[snakeIndex].x--;
+					break;
+				case SNAKE_DIRECTION_SOUTH:
+					snakeGame.players[snakeIndex].y++;
+					break;
+			}
+
+			if(snakeGame.players[snakeIndex].x >= 24) {
+				snakeGame.players[snakeIndex].x %= 24;
+			}
+			if(snakeGame.players[snakeIndex].x < 0) {
+				snakeGame.players[snakeIndex].x = 23;
+			}
+			if(snakeGame.players[snakeIndex].y >= 24) {
+				snakeGame.players[snakeIndex].y %= 24;
+			}
+			if(snakeGame.players[snakeIndex].y < 0) {
+				snakeGame.players[snakeIndex].y = 23;
+			}
+
+		}
+	}
+
+	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
+		pixels[xyToLedIndex(snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y)] = snakeGame.players[snakeIndex].colour;
+	}
+}
+
 void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness) {
 	for(int i = 0; i < (24*24); i++) {
 		pixels[i] = 0;
@@ -920,6 +1035,9 @@ int main(void)
 					gameMode = MODE_RANDOM;
 					break;
 				case MODE_RANDOM:
+					gameMode = MODE_SNAKE;
+					break;
+				case MODE_SNAKE:
 					gameMode = MODE_DEBUG;
 					break;
 				case MODE_DEBUG:
@@ -934,6 +1052,8 @@ int main(void)
 			blind(rgbToPixel(1, 0xff, 0xff, 0xff));
 		} else if(gameMode == MODE_RANDOM) {
 			random_pixels(1);
+		} else if(gameMode == MODE_SNAKE) {
+			snake(buttonState, buttonAccumulators, 1);
 		} else if(gameMode == MODE_DEBUG) {
 			debug(buttonState, buttonAccumulators, 1);
 		}
