@@ -81,21 +81,22 @@ static uint8_t missingLedCount = 2;
 
 static uint32_t pixels[576];
 
-uint16_t BUTTON_SELECT = 0b0000000000100000;
-uint16_t BUTTON_START  = 0b0000000001000000;
-uint16_t BUTTON_R4     = 0b0000000010000000;
-uint16_t BUTTON_R3     = 0b0000000100000000;
-uint16_t BUTTON_R2     = 0b0000001000000000;
-uint16_t BUTTON_R1     = 0b0000010000000000;
-uint16_t BUTTON_L4     = 0b0000100000000000;
-uint16_t BUTTON_L3     = 0b0001000000000000;
-uint16_t BUTTON_L2     = 0b0010000000000000;
-uint16_t BUTTON_L1     = 0b0100000000000000;
+uint16_t BUTTON_SELECT = 6;
+uint16_t BUTTON_START  = 7;
+uint16_t BUTTON_R4     = 8;
+uint16_t BUTTON_R3     = 9;
+uint16_t BUTTON_R2     = 10;
+uint16_t BUTTON_R1     = 11;
+uint16_t BUTTON_L4     = 12;
+uint16_t BUTTON_L3     = 13;
+uint16_t BUTTON_L2     = 14;
+uint16_t BUTTON_L1     = 15;
 
 #define MODE_RAIN     0b0000000000000001
 #define MODE_SNAKE    0b0000000000000010
 #define MODE_BLIND    0b0000000000000100
 #define MODE_RANDOM   0b0000000000001000
+#define MODE_DEBUG    0b0000000000010000
 
 
 static uint8_t start_frame_data[] = {
@@ -435,9 +436,11 @@ void GenerateTestSPISignal()
         HAL_SPI_Transmit(&hspi2, start_frame_data, led_frame_size * 2, HAL_MAX_DELAY);
 
 	uint8_t off_led_data[] = {
+		0x00000111, 0x00, 0x00, 0x00
 		//0x11100000, 0x00, 0x00, 0x00
 		//brightness, 0x00, 0x00, 0x00
-		brightness, 0x00, 0x00, 0x00
+		//0x00, 0x01, 0x01, 0x01
+		//0x00, 0x00, 0x00, 0x00
 	};
 
 	for(uint16_t led_count = 0; led_count < 576; led_count++) {
@@ -583,6 +586,17 @@ void rain(int xAcc, int yAcc, uint32_t rainColour) {
 				particles[i] = NULL;
 			}
 		}
+	}
+}
+
+void debug(uint16_t buttonState[16], uint16_t buttonAccumulators[16]) {
+	for(int i = 0; i < (24*24); i++) {
+		pixels[i] = 0;
+	}
+
+	for(int i = 0; i < 16; i++) {
+		pixels[i] = buttonState[i];
+		pixels[i+24] = buttonAccumulators[i];
 	}
 }
 
@@ -732,6 +746,9 @@ int main(void)
 
   int16_t accData[3];
 
+	uint32_t buttonAccumulators[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+	uint32_t buttonState[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+
 	uint16_t gameMode = MODE_RAIN;
 
 	uint32_t rainBrightness = 0b11100001;
@@ -740,6 +757,7 @@ int main(void)
 	uint32_t rainBlue = 5;
 
 	uint32_t last_tick = HAL_GetTick();
+	uint32_t buttonTicks = 0;
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
@@ -835,78 +853,116 @@ int main(void)
 		last_tick = HAL_GetTick();
 		ClearPixels();
 
-		uint16_t buttonBits = readButtons();
-		uint16_t populatedButtonBits = buttonBits & 0b0111111111100000;
+		if((buttonState[BUTTON_SELECT] < 256) && (buttonAccumulators[BUTTON_SELECT] > 256)) {
+			switch(gameMode) {
+				case MODE_RAIN:
+					gameMode = MODE_BLIND;
+					break;
+				case MODE_BLIND:
+					gameMode = MODE_RANDOM;
+					break;
+				case MODE_RANDOM:
+					gameMode = MODE_DEBUG;
+					break;
+				case MODE_DEBUG:
+					gameMode = MODE_RAIN;
+					break;
+			}
 
-		if(populatedButtonBits) {
-			for(int i = 0; i < 16; i++) {
-				if(populatedButtonBits & (1 << i)) {
-					for(int y = 0; y < 24; y++) {
-						pixels[xyToLedIndex(i, y)] = rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue);
-					}
-				}
-			}			
+			buttonState[BUTTON_SELECT] = 512;
+		} else if(buttonAccumulators[BUTTON_SELECT] < 256) {
+			buttonState[BUTTON_SELECT] = 0;
+		}
+		if((buttonState[BUTTON_START] < 256) && (buttonAccumulators[BUTTON_START] > 256)) {
+			rainBrightness <<= 1;
+			if(rainBrightness < 0) {
+				rainBrightness = 1;
+			} 
+			buttonState[BUTTON_START] = 512;
+		} else if(buttonAccumulators[BUTTON_START] < 256) {
+			buttonState[BUTTON_START] = 0;
+		}
+		if((buttonState[BUTTON_L4] < 256) && (buttonAccumulators[BUTTON_L4] > 256)) {
+			if(rainRed > 0) {
+				rainRed--;
+			}
+			buttonState[BUTTON_L4] = 512;
+		} else if(buttonAccumulators[BUTTON_L4] < 256) {
+			buttonState[BUTTON_L4] = 0;
+		}
+		if((buttonState[BUTTON_L2] < 256) && (buttonAccumulators[BUTTON_L2] > 256)) {
+			if(rainRed < 254) {
+				rainRed++;
+			}
+			buttonState[BUTTON_L2] = 512;
+		} else if(buttonAccumulators[BUTTON_L2] < 256) {
+			buttonState[BUTTON_L2] = 0;
+		}
+		if((buttonState[BUTTON_R4] < 256) && (buttonAccumulators[BUTTON_R4] > 256)) {
+			if(rainGreen > 0) {
+				rainGreen--;
+			}
+			buttonState[BUTTON_R4] = 512;
+		} else if(buttonAccumulators[BUTTON_R4] < 256) {
+			buttonState[BUTTON_R4] = 0;
+		}
+		if((buttonState[BUTTON_R2] < 256) && (buttonAccumulators[BUTTON_R2] > 256)) {
+			if(rainGreen < 254) {
+				rainGreen++;
+			}
+			buttonState[BUTTON_R2] = 512;
+		} else if(buttonAccumulators[BUTTON_R2] < 256) {
+			buttonState[BUTTON_R2] = 0;
+		}
+		if((buttonState[BUTTON_R1] < 256) && (buttonAccumulators[BUTTON_R1] > 256)) {
+			if(rainBlue > 0) {
+				rainBlue--;
+			}
+			buttonState[BUTTON_R1] = 512;
+		} else if(buttonAccumulators[BUTTON_R1] < 256) {
+			buttonState[BUTTON_R1] = 0;
+		}
+		if((buttonState[BUTTON_R3] < 256) && (buttonAccumulators[BUTTON_R3] > 256)) {
+			if(rainBlue < 254) {
+				rainBlue++;
+			}
+			buttonState[BUTTON_R3] = 512;
+		} else if(buttonAccumulators[BUTTON_R3] < 256) {
+			buttonState[BUTTON_R3] = 0;
+		}
 
-			if(BUTTON_SELECT & populatedButtonBits) {
-				switch(gameMode) {
-					case MODE_RAIN:
-						gameMode = MODE_BLIND;
-						break;
-					case MODE_BLIND:
-						gameMode = MODE_RANDOM;
-						break;
-					case MODE_RANDOM:
-						gameMode = MODE_RAIN;
-						break;
-				}
-			}
-			if(BUTTON_START & populatedButtonBits) {
-				rainBrightness <<= 1;
-			}
-			if(BUTTON_L4 & populatedButtonBits) {
-				if(rainRed > 0) {
-					rainRed--;
-				}
-			}
-			if(BUTTON_L2 & populatedButtonBits) {
-				if(rainRed < 254) {
-					rainRed++;
-				}
-			}
-			if(BUTTON_R4 & populatedButtonBits) {
-				if(rainGreen > 0) {
-					rainGreen--;
-				}
-			}
-			if(BUTTON_R2 & populatedButtonBits) {
-				if(rainGreen < 254) {
-					rainGreen++;
-				}
-			}
-			if(BUTTON_R1 & populatedButtonBits) {
-				if(rainBlue > 0) {
-					rainBlue--;
-				}
-			}
-			if(BUTTON_R3 & populatedButtonBits) {
-				if(rainBlue < 254) {
-					rainBlue++;
-				}
-			}
-		} else {
-			//rain(accData[0], accData[1]);
-			if(gameMode == MODE_RAIN) {
-				rain(mean_x, mean_y, rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue));
-			} else if(gameMode == MODE_BLIND) {
-				blind(rgbToPixel(rainBrightness, 0xff, 0xff, 0xff));
-			} else if(gameMode == MODE_RANDOM) {
-				random_pixels(rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue));
-			}
+		//rain(accData[0], accData[1]);
+		if(gameMode == MODE_RAIN) {
+			rain(mean_x, mean_y, rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue));
+		} else if(gameMode == MODE_BLIND) {
+			blind(rgbToPixel(rainBrightness, 0xff, 0xff, 0xff));
+		} else if(gameMode == MODE_RANDOM) {
+			random_pixels(rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue));
+		} else if(gameMode == MODE_DEBUG) {
+			debug(buttonState, buttonAccumulators);
 		}
 		GenerateTestSPISignal();
 	}
 
 
+	uint16_t buttonBits = readButtons();
+	uint16_t populatedButtonBits = buttonBits & 0b0111111111100000;
+
+	for(int buttonIndex = 0; buttonIndex < 16; buttonIndex++) {
+		uint16_t buttonMask = (1 << buttonIndex);
+		uint16_t buttonState = populatedButtonBits & buttonMask;
+		if(buttonState) {
+			buttonAccumulators[buttonIndex]++;
+		} else {
+			buttonAccumulators[buttonIndex]--;
+		}
+
+		if(buttonAccumulators[buttonIndex] <= 1) {
+			buttonAccumulators[buttonIndex] = 1;
+		} else if(buttonAccumulators[buttonIndex] > 512) {
+			buttonAccumulators[buttonIndex] = 512;
+		}
+	}
 
 /*
 	HAL_Delay(500);
