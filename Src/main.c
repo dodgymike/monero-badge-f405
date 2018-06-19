@@ -735,6 +735,22 @@ void updateSnakeTailPositions(struct SnakeTail* snakeTail, uint16_t x, uint16_t 
 	snakeTail->y = y;
 }
 
+uint8_t tailContainsCoords(struct SnakeTail* snakeTail, uint16_t x, uint16_t y) {
+	if(snakeTail == NULL) {
+		return 0;
+	}
+
+	if((snakeTail->x == x) && (snakeTail->y == y)) {
+		return 1;
+	}
+
+	if(snakeTail->next != NULL) {
+		return tailContainsCoords(snakeTail->next, x, y);
+	}
+
+	return 0;
+}
+
 void initSnakePlayer(struct SnakePlayer* snakePlayer) {
 	snakePlayer->playing = 1;
 	snakePlayer->x = rand() % 24;
@@ -806,6 +822,10 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	}
 
 	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
+		if(snakeGame.players[snakeIndex].playing == 0) {
+			continue;
+		}
+
 		if((currentTick - snakeGame.players[snakeIndex].lastMovementTick) > snakeGame.players[snakeIndex].speed) {
 			snakeGame.players[snakeIndex].lastMovementTick = currentTick;
 
@@ -848,12 +868,38 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 						snakeGame.snakeFood[snakeFoodIndex] = NULL;
 
 						addSnakeTail(&snakeGame.players[snakeIndex]);
+						snakeGame.players[snakeIndex].speed -= 3;
 					}
 				}
 			}
 		}
 	}
 
+	// check for collisions
+	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
+		for(int opponentSnakeIndex = 0; opponentSnakeIndex < snakeGame.snakeCount; opponentSnakeIndex++) {
+			if(snakeIndex == opponentSnakeIndex) {
+				continue;
+			}
+
+			if(tailContainsCoords(snakeGame.players[opponentSnakeIndex].tail, snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y)) {
+				// GAME OVER
+				snakeGame.players[snakeIndex].playing = 0;
+				return;
+			}
+
+
+			if((snakeGame.players[snakeIndex].x == snakeGame.players[opponentSnakeIndex].x) && (snakeGame.players[snakeIndex].y == snakeGame.players[opponentSnakeIndex].y)) {
+				// GAME OVER
+				snakeGame.players[snakeIndex].playing = 0;
+				snakeGame.players[opponentSnakeIndex].playing = 0;
+				return;
+			}
+		}
+	}
+	
+
+	// DRAW SNAKE + TAIL
 	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
 		pixels[xyToLedIndex(snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y)] = snakeGame.players[snakeIndex].colour;
 		struct SnakeTail* snakeTail = snakeGame.players[snakeIndex].tail;
@@ -863,6 +909,7 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 		}
 	}
 
+	// DRAW SNAKE FOOD
 	for(int snakeFoodIndex = 0; snakeFoodIndex < snakeGame.snakeCount; snakeFoodIndex++) {
 		if(snakeGame.snakeFood[snakeFoodIndex] != NULL) {
 			pixels[xyToLedIndex(snakeGame.snakeFood[snakeFoodIndex]->x, snakeGame.snakeFood[snakeFoodIndex]->y)] = rgbToPixel(20, 20, 0, 0);
