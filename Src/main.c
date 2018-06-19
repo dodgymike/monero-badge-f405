@@ -735,7 +735,20 @@ void updateSnakeTailPositions(struct SnakeTail* snakeTail, uint16_t x, uint16_t 
 	snakeTail->y = y;
 }
 
-uint8_t tailContainsCoords(struct SnakeTail* snakeTail, uint16_t x, uint16_t y) {
+void deleteSnakeTail(struct SnakeTail* snakeTail) {
+	if(snakeTail == NULL) {
+		return;
+	}
+
+	if(snakeTail->next != NULL) {
+		deleteSnakeTail(snakeTail->next);
+	}
+
+	free(snakeTail);
+	snakeTail->next = NULL;
+}
+
+uint8_t tailContainsCoords(struct SnakeTail* snakeTail, uint16_t x, uint16_t y, uint16_t depth) {
 	if(snakeTail == NULL) {
 		return 0;
 	}
@@ -745,7 +758,7 @@ uint8_t tailContainsCoords(struct SnakeTail* snakeTail, uint16_t x, uint16_t y) 
 	}
 
 	if(snakeTail->next != NULL) {
-		return tailContainsCoords(snakeTail->next, x, y);
+		return tailContainsCoords(snakeTail->next, x, y, depth + 1);
 	}
 
 	return 0;
@@ -774,6 +787,19 @@ void initSnakeFood(struct SnakeFood* snakeFood) {
 
 void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness) {
 	uint32_t currentTick = HAL_GetTick();
+
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_START)) {
+		for(int i = 0; i < snakeGame.snakeCount; i++) {
+			deleteSnakeTail(snakeGame.players[i].tail);
+
+			if(snakeGame.snakeFood[i] != NULL) {
+				free(snakeGame.snakeFood[i]);
+				snakeGame.snakeFood[i] = NULL;
+			}
+		}
+
+		snakeGame.snakeCount = 0;
+	}
 
 	if(snakeGame.snakeCount == 0) {
 		initSnakePlayer(&(snakeGame.players[0]));
@@ -882,12 +908,11 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 				continue;
 			}
 
-			if(tailContainsCoords(snakeGame.players[opponentSnakeIndex].tail, snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y)) {
+			if(tailContainsCoords(snakeGame.players[opponentSnakeIndex].tail, snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y, 0)) {
 				// GAME OVER
 				snakeGame.players[snakeIndex].playing = 0;
 				return;
 			}
-
 
 			if((snakeGame.players[snakeIndex].x == snakeGame.players[opponentSnakeIndex].x) && (snakeGame.players[snakeIndex].y == snakeGame.players[opponentSnakeIndex].y)) {
 				// GAME OVER
