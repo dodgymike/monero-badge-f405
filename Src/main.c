@@ -694,6 +694,47 @@ struct SnakeFood {
 #define SNAKE_DIRECTION_SOUTH 2
 #define SNAKE_DIRECTION_WEST  3
 
+struct SnakeTail* findSnakePlayerTailTail(struct SnakeTail* snakeTail) {
+	if(snakeTail->next == NULL) {
+		return snakeTail;
+	}
+
+	return findSnakePlayerTailTail(snakeTail->next);
+}
+
+struct SnakeTail* createSnakeTail(int16_t x, int16_t y) {
+	struct SnakeTail* snakeTail = malloc(sizeof(struct SnakeTail));
+	snakeTail->x = x;
+	snakeTail->y = y;
+	snakeTail->next = NULL;
+
+	return snakeTail;
+}
+
+void addSnakeTail(struct SnakePlayer* snakePlayer) {
+	struct SnakeTail* newTail = createSnakeTail(snakePlayer->x, snakePlayer->y);
+
+	if(snakePlayer->tail == NULL) {
+		snakePlayer->tail = newTail;
+	} else {
+		struct SnakeTail* snakeTail = findSnakePlayerTailTail(snakePlayer->tail);
+		snakeTail->next = newTail;
+	}
+}
+
+void updateSnakeTailPositions(struct SnakeTail* snakeTail, uint16_t x, uint16_t y) {
+	if(snakeTail == NULL) {
+		return;
+	}
+
+	if(snakeTail->next != NULL) {
+		updateSnakeTailPositions(snakeTail->next, snakeTail->x, snakeTail->y);
+	}
+
+	snakeTail->x = x;
+	snakeTail->y = y;
+}
+
 void initSnakePlayer(struct SnakePlayer* snakePlayer) {
 	snakePlayer->playing = 1;
 	snakePlayer->x = rand() % 24;
@@ -796,11 +837,30 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 				snakeGame.players[snakeIndex].y = 23;
 			}
 
+			updateSnakeTailPositions(snakeGame.players[snakeIndex].tail, snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y);
+
+			for(int snakeFoodIndex = 0; snakeFoodIndex < snakeGame.snakeCount; snakeFoodIndex++) {
+				if(snakeGame.snakeFood[snakeFoodIndex] != NULL) {
+					struct SnakeFood* snakeFood = snakeGame.snakeFood[snakeFoodIndex];
+					if((snakeFood->x == snakeGame.players[snakeIndex].x) && (snakeFood->y == snakeGame.players[snakeIndex].y)) {
+						free(snakeFood);
+						snakeFood = NULL;
+						snakeGame.snakeFood[snakeFoodIndex] = NULL;
+
+						addSnakeTail(&snakeGame.players[snakeIndex]);
+					}
+				}
+			}
 		}
 	}
 
 	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
 		pixels[xyToLedIndex(snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y)] = snakeGame.players[snakeIndex].colour;
+		struct SnakeTail* snakeTail = snakeGame.players[snakeIndex].tail;
+		while(snakeTail != NULL) {
+			pixels[xyToLedIndex(snakeTail->x, snakeTail->y)] = snakeGame.players[snakeIndex].colour;
+			snakeTail = snakeTail->next;
+		}
 	}
 
 	for(int snakeFoodIndex = 0; snakeFoodIndex < snakeGame.snakeCount; snakeFoodIndex++) {
