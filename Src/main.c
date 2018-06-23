@@ -1087,6 +1087,8 @@ int main(void)
 		HAL_Delay(500);
 	}
 
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+
   serialSend("Initialising MPU6000: ");
 
   initMPU6000();
@@ -1207,7 +1209,12 @@ int main(void)
 		last_tick = HAL_GetTick();
 		ClearPixels();
 
-		if(buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT)) {
+		uint8_t selectPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT);
+		uint8_t startPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_START);
+
+		if(selectPressed && startPressed) {
+        		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+		} else if(selectPressed) {
 			switch(gameMode) {
 				case MODE_RAIN:
 					gameMode = MODE_BLIND;
@@ -1240,7 +1247,6 @@ int main(void)
 		}
 		GenerateTestSPISignal();
 	}
-
 
 	uint16_t buttonBits = readButtons();
 	uint16_t populatedButtonBits = buttonBits & 0b0111111111100000;
@@ -1463,6 +1469,11 @@ static void MX_GPIO_Init(void)
 	GPIO_InitStruct.Pin  = GPIO_PIN_3;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin  = GPIO_PIN_1;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     GPIO_InitStruct.Pin       = GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
