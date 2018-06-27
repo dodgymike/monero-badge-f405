@@ -76,6 +76,233 @@ static void MX_SPI1_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+static uint8_t CHAR_WIDTH = 4;
+static uint8_t CHAR_HEIGHT = 5;
+static uint8_t characters[37 * 5] = {
+	/* A */
+	0b0110,
+	0b1001,
+	0b1111,
+	0b1001,
+	0b1001,
+	/* B */
+	0b1111,
+	0b1001,
+	0b1110,
+	0b1001,
+	0b1111,
+	/* C */
+	0b1111,
+	0b1000,
+	0b1000,
+	0b1000,
+	0b1111,
+	/* D */
+	0b1110,
+	0b1001,
+	0b1001,
+	0b1001,
+	0b1110,
+	/* E */
+	0b1111,
+	0b1000,
+	0b1111,
+	0b1000,
+	0b1111,
+	/* F */
+	0b1111,
+	0b1000,
+	0b1111,
+	0b1000,
+	0b1000,
+	/* G */
+	0b1111,
+	0b1000,
+	0b1011,
+	0b1001,
+	0b1111,
+	/* H */
+	0b1001,
+	0b1001,
+	0b1111,
+	0b1001,
+	0b1001,
+	/* I */
+	0b1111,
+	0b0110,
+	0b0110,
+	0b0110,
+	0b1111,
+	/* J */
+	0b1111,
+	0b0110,
+	0b0110,
+	0b0110,
+	0b1100,
+	/* K */
+	0b1001,
+	0b1010,
+	0b1100,
+	0b1010,
+	0b1001,
+	/* L */
+	0b1000,
+	0b1000,
+	0b1000,
+	0b1000,
+	0b1111,
+	/* M */
+	0b1001,
+	0b1111,
+	0b1111,
+	0b1001,
+	0b1001,
+	/* N */
+	0b1001,
+	0b1101,
+	0b1011,
+	0b1001,
+	0b1001,
+	/* O */
+	0b1111,
+	0b1001,
+	0b1001,
+	0b1001,
+	0b1111,
+	/* P */
+	0b1111,
+	0b1001,
+	0b1111,
+	0b1000,
+	0b1000,
+	/* Q */
+	0b1111,
+	0b1001,
+	0b1001,
+	0b1111,
+	0b0001,
+	/* R */
+	0b1111,
+	0b1001,
+	0b1111,
+	0b1011,
+	0b1001,
+	/* S */
+	0b1111,
+	0b1000,
+	0b1111,
+	0b0001,
+	0b1111,
+	/* T */
+	0b1111,
+	0b0110,
+	0b0110,
+	0b0110,
+	0b0110,
+	/* U */
+	0b1001,
+	0b1001,
+	0b1001,
+	0b1001,
+	0b1111,
+	/* V */
+	0b1001,
+	0b1001,
+	0b1001,
+	0b0110,
+	0b0000,
+	/* W */
+	0b1001,
+	0b1001,
+	0b1111,
+	0b1111,
+	0b0110,
+	/* X */
+	0b1001,
+	0b1001,
+	0b0110,
+	0b1001,
+	0b1001,
+	/* Y */
+	0b1001,
+	0b1001,
+	0b0110,
+	0b0110,
+	0b0110,
+	/* Z */
+	0b1111,
+	0b0011,
+	0b0110,
+	0b1100,
+	0b1111,
+	/* 0 */
+	0b1111,
+	0b1001,
+	0b1001,
+	0b1001,
+	0b1111,
+	/* 1 */
+	0b0111,
+	0b1101,
+	0b0001,
+	0b0001,
+	0b0001,
+	/* 2 */
+	0b0111,
+	0b1001,
+	0b0010,
+	0b0100,
+	0b1111,
+	/* 3 */
+	0b1110,
+	0b0001,
+	0b0110,
+	0b0001,
+	0b1110,
+	/* 4 */
+	0b1001,
+	0b1001,
+	0b1111,
+	0b0001,
+	0b0001,
+	/* 5 */
+	0b0111,
+	0b1000,
+	0b1110,
+	0b0001,
+	0b1110,
+	/* 6 */
+	0b0111,
+	0b1000,
+	0b1111,
+	0b1001,
+	0b1111,
+	/* 7 */
+	0b1111,
+	0b1111,
+	0b0010,
+	0b0100,
+	0b0100,
+	/* 8 */
+	0b0110,
+	0b1001,
+	0b1111,
+	0b1001,
+	0b0110,
+	/* 9 */
+	0b0111,
+	0b1001,
+	0b0111,
+	0b0001,
+	0b0001,
+	/* SPACE */
+	0b0000,
+	0b0000,
+	0b0000,
+	0b0000,
+	0b0000,
+};
+
 static uint16_t missingLeds[] = { 460, 461 };
 static uint8_t missingLedCount = 2;
 
@@ -955,6 +1182,39 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 		pixels[xyToLedIndex(i, 4)] = rgbToPixel(brightness, (buttonAccumulators[i] > 32) ? 20 : 0, (buttonAccumulators[i] <= 32) ? 20 : 0, 0);
 		pixels[xyToLedIndex(i, 5)] = rgbToPixel(brightness, (buttonAccumulators[i] > 16) ? 20 : 0, (buttonAccumulators[i] <= 16) ? 20 : 0, 0);
 		pixels[xyToLedIndex(i, 6)] = rgbToPixel(brightness, (buttonAccumulators[i] > 0) ? 20 : 0, (buttonAccumulators[i] <= 0) ? 20 : 0, 0);
+	}
+
+	drawText(brightness, 0, 9, "monkey", 6);
+}
+
+void drawText(uint8_t brightness, uint8_t x, uint8_t y, uint8_t text[], uint8_t length) {
+	uint8_t xOffset = x;
+
+	for(int textIndex = 0; textIndex < length; textIndex++) {
+		uint8_t charToDraw = text[textIndex];
+		uint8_t charIndex = 0;
+		if(charToDraw == 32) {
+			charIndex = 36;
+		} else if(charToDraw >= 65 && charToDraw <= 90) {
+			charIndex = charToDraw - 65;
+		} else if(charToDraw >= 97 && charToDraw <= 122) {
+			charIndex = charToDraw - 97;
+		} else if(charToDraw >= 48 && charToDraw <= 57) {
+			charIndex = charToDraw - 48 + 26;
+		}
+
+		for(uint8_t charX = 0; charX < CHAR_WIDTH; charX++) {
+			for(uint8_t charY = 0; charY < CHAR_HEIGHT; charY++) {
+				uint8_t charLine = characters[(charIndex * CHAR_HEIGHT) + charY];
+				if((charLine >> (CHAR_WIDTH - charX - 1)) & 1) {
+					pixels[xyToLedIndex(x + charX + xOffset, y + charY)] = rgbToPixel(brightness, 20, 20, 20);
+				} else {
+					pixels[xyToLedIndex(x + charX + xOffset, y + charY)] = rgbToPixel(brightness, 0, 0, 0);
+				}
+			}
+		}
+		pixels[xyToLedIndex(xOffset, 20)] = rgbToPixel(brightness, 20, 20, 20);
+		xOffset += CHAR_WIDTH;
 	}
 }
 
