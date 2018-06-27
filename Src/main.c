@@ -1477,18 +1477,18 @@ int main(void)
 		} else if(selectPressed) {
 			switch(gameMode) {
 				case MODE_RAIN:
-					gameMode = MODE_BLIND;
-					break;
-				case MODE_BLIND:
-					gameMode = MODE_RANDOM;
-					break;
-				case MODE_RANDOM:
 					gameMode = MODE_SNAKE;
 					break;
 				case MODE_SNAKE:
 					gameMode = MODE_DEBUG;
 					break;
 				case MODE_DEBUG:
+					gameMode = MODE_BLIND;
+					break;
+				case MODE_BLIND:
+					gameMode = MODE_RANDOM;
+					break;
+				case MODE_RANDOM:
 					gameMode = MODE_RAIN;
 					break;
 			}
