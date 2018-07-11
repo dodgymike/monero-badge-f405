@@ -337,8 +337,9 @@ static uint8_t characters[37 * 6] = {
 	0b0000,
 };
 
-static uint16_t missingLeds[] = { 460, 461 };
-static uint8_t missingLedCount = 2;
+//static uint16_t missingLeds[] = { 460, 461 };
+static uint16_t missingLeds[] = { };
+static uint8_t missingLedCount = 0;
 
 static uint32_t pixels[576];
 
@@ -1218,7 +1219,20 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 		pixels[xyToLedIndex(i, 6)] = rgbToPixel(brightness, (buttonAccumulators[i] > 0) ? 20 : 0, (buttonAccumulators[i] <= 0) ? 20 : 0, 0);
 	}
 
-	drawText(brightness, 0, 9, "monero", 6);
+	//drawText(brightness, 0, 9, "monero", 6);
+
+	uint32_t adcValue = 0;
+	HAL_ADC_Start(&hadc1);
+	for (;;) {
+		if (HAL_ADC_PollForConversion(&hadc1, 1000000) == HAL_OK) {
+			adcValue = HAL_ADC_GetValue(&hadc1);
+			break;
+		}
+	}
+
+	char adcValueText[4];
+	sprintf(adcValueText, "%0.4d", adcValue);
+	drawText(brightness, 0, 9, adcValueText, 4);
 }
 
 void drawText(uint8_t brightness, uint8_t x, uint8_t y, uint8_t text[], uint8_t length) {
