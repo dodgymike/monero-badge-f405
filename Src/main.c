@@ -260,74 +260,74 @@ static uint8_t characters[37 * 6] = {
 	0b1111,
 	/* 0 */
 	4,
-	0b1111,
-	0b1001,
-	0b1001,
-	0b1001,
-	0b1111,
+	0b1110,
+	0b1010,
+	0b1010,
+	0b1010,
+	0b1110,
 	/* 1 */
 	4,
-	0b0111,
-	0b1101,
-	0b0001,
-	0b0001,
-	0b0001,
+	0b0100,
+	0b0100,
+	0b0100,
+	0b0100,
+	0b0100,
 	/* 2 */
 	4,
-	0b0111,
-	0b1001,
+	0b1110,
 	0b0010,
-	0b0100,
-	0b1111,
+	0b1110,
+	0b1000,
+	0b1110,
 	/* 3 */
 	4,
 	0b1110,
-	0b0001,
+	0b0010,
 	0b0110,
-	0b0001,
+	0b0010,
 	0b1110,
 	/* 4 */
 	4,
-	0b1001,
-	0b1001,
-	0b1111,
-	0b0001,
-	0b0001,
+	0b1010,
+	0b1010,
+	0b1110,
+	0b0010,
+	0b0010,
 	/* 5 */
 	4,
-	0b0111,
+	0b1110,
 	0b1000,
 	0b1110,
-	0b0001,
+	0b0010,
 	0b1110,
 	/* 6 */
 	4,
-	0b0111,
+	0b1110,
 	0b1000,
-	0b1111,
-	0b1001,
-	0b1111,
+	0b1110,
+	0b1010,
+	0b1110,
 	/* 7 */
 	4,
-	0b1111,
-	0b1111,
+	0b1110,
 	0b0010,
-	0b0100,
-	0b0100,
+	0b0010,
+	0b0010,
+	0b0010,
 	/* 8 */
 	4,
-	0b0110,
-	0b1001,
-	0b1111,
-	0b1001,
-	0b0110,
+	0b1110,
+	0b1010,
+	0b1110,
+	0b1010,
+	0b1110,
 	/* 9 */
 	4,
-	0b0111,
-	0b1001,
-	0b0111,
-	0b0001,
-	0b0001,
+	0b1110,
+	0b1010,
+	0b1110,
+	0b0010,
+	0b0010,
 	/* SPACE */
 	4,
 	0b0000,
@@ -1204,6 +1204,7 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	}
 }
 
+uint32_t batteryAdcValue = 0;
 void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness) {
 	for(int i = 0; i < (24*24); i++) {
 		pixels[i] = 0;
@@ -1221,18 +1222,15 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 
 	//drawText(brightness, 0, 9, "monero", 6);
 
-	uint32_t adcValue = 0;
-	HAL_ADC_Start(&hadc1);
-	for (;;) {
-		if (HAL_ADC_PollForConversion(&hadc1, 1000000) == HAL_OK) {
-			adcValue = HAL_ADC_GetValue(&hadc1);
-			break;
-		}
+	//if (HAL_ADC_PollForConversion(&hadc1, 1000000) == HAL_OK) {
+	if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) {
+		batteryAdcValue = HAL_ADC_GetValue(&hadc1);
+		HAL_ADC_Start(&hadc1);
 	}
 
-	char adcValueText[4];
-	sprintf(adcValueText, "%0.4d", adcValue);
-	drawText(brightness, 0, 9, adcValueText, 4);
+	char batteryAdcValueText[4];
+	sprintf(batteryAdcValueText, "%0.4d", batteryAdcValue);
+	drawText(brightness, 0, 9, batteryAdcValueText, 4);
 }
 
 void drawText(uint8_t brightness, uint8_t x, uint8_t y, uint8_t text[], uint8_t length) {
@@ -1407,10 +1405,12 @@ int main(void)
 		HAL_Delay(500);
 	}
 
-	// IR TXT
+	// IR TX
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+
+	HAL_ADC_Start(&hadc1);
 
   serialSend("Initialising MPU6000: ");
 
