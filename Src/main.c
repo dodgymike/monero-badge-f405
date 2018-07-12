@@ -697,8 +697,7 @@ void GenerateTestSPISignal()
 {
 
 	uint8_t led_frame_size = 4;
-	uint8_t brightness = 0b11100001;
-	//uint8_t brightness = 0b11100111;
+	uint8_t offBrightness = 0b11110000;
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 
@@ -707,17 +706,21 @@ void GenerateTestSPISignal()
 	uint8_t off_led_data[] = {
 		//0x00000111, 0x00, 0x00, 0x00
 		//0x11100000, 0x00, 0x00, 0x00
-		brightness, 0x00, 0x00, 0x00
+		offBrightness, 0x00, 0x00, 0x00
 		//0x00, 0x01, 0x01, 0x01
 		//0x00, 0x00, 0x00, 0x00
 	};
 
 	for(uint16_t led_count = 0; led_count < 576; led_count++) {
 		if(pixels[led_count] > 0) {
-			uint8_t brightness = (pixels[led_count] >> 24) & 0xff;
-			uint8_t red = (pixels[led_count] >> 16) & 0xff;
-			uint8_t green = (pixels[led_count] >> 8) & 0xff;
-			uint8_t blue = pixels[led_count] & 0xff;
+			//uint8_t brightness = (pixels[led_count] >> 24) & 0xff;
+			//uint8_t red = (pixels[led_count] >> 16) & 0xff;
+			//uint8_t green = (pixels[led_count] >> 8) & 0xff;
+			//uint8_t blue = pixels[led_count] & 0xff;
+			uint8_t brightness = 0b11110000;
+			uint8_t red = ((pixels[led_count] >> 16) & 0xff) > 0 ? 1 : 0;
+			uint8_t green = ((pixels[led_count] >> 8) & 0xff) > 0 ? 1 : 0;
+			uint8_t blue = (pixels[led_count] & 0xff) > 0 ? 1 : 0;
 
 			uint8_t led_data[] = {
 				//brightness, 0x05, 0x05, 0x05
