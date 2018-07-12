@@ -338,13 +338,6 @@ static uint8_t characters[37 * 6] = {
 	0b0000,
 };
 
-static uint32_t voltageBufferSize = 100;
-uint32_t voltageBuffer[100];
-uint32_t voltageBufferIndex = 0;
-uint32_t voltage = 0;
-uint32_t batteryAdcValue = 0;
-uint32_t batteryAdcAverage = 0;
-
 //static uint16_t missingLeds[] = { 460, 461 };
 static uint16_t missingLeds[] = { };
 static uint8_t missingLedCount = 0;
@@ -736,7 +729,7 @@ void GenerateTestSPISignal()
 		}
 	}
 
-        HAL_SPI_Transmit(&hspi2, end_frame_data, led_frame_size * 12, HAL_MAX_DELAY);
+        HAL_SPI_Transmit(&hspi2, end_frame_data, led_frame_size * 8, HAL_MAX_DELAY);
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
@@ -1315,6 +1308,7 @@ uint16_t readButtons() {
 	return buttonBits;
 }
 
+
 /* USER CODE END 0 */
 
 /**
@@ -1388,10 +1382,10 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_SPI2_Init();
-	MX_SPI1_Init();
-	MX_ADC1_Init();
+  MX_GPIO_Init();
+  MX_SPI2_Init();
+  MX_SPI1_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
@@ -1416,28 +1410,28 @@ int main(void)
 
 	HAL_ADC_Start(&hadc1);
 
-	serialSend("Initialising MPU6000: ");
+  serialSend("Initialising MPU6000: ");
 
-	initMPU6000();
-	serialSend("DONE\r\n");
+  initMPU6000();
+  serialSend("DONE\r\n");
 
 	uint32_t batteryAdcAverage = 0;
 	uint32_t batteryAdcValuesSize = 3000;
 	uint32_t batteryAdcValues[batteryAdcValuesSize];
 	uint32_t batteryAdcValuesIndex = 0;
 
-	int bufferSize = 40;
-	initAccRingBuffer(bufferSize);
+  int bufferSize = 40;
+  initAccRingBuffer(bufferSize);
 
-	int16_t mean_x = 1;
-	int16_t mean_y = 0;
-	int16_t mean_z = 0;
+  int16_t mean_x = 1;
+  int16_t mean_y = 0;
+  int16_t mean_z = 0;
 
-	int16_t std_x = 0;
-	int16_t std_y = 0;
-	int16_t std_z = 0;
+  int16_t std_x = 0;
+  int16_t std_y = 0;
+  int16_t std_z = 0;
 
-	int16_t accData[3];
+  int16_t accData[3];
 
 	uint32_t buttonAccumulators[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 	uint32_t buttonState[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
@@ -1454,8 +1448,7 @@ int main(void)
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-
+  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -1606,13 +1599,6 @@ int main(void)
 		batteryAdcValues[batteryAdcValuesIndex++] = HAL_ADC_GetValue(&hadc1);
 		if(batteryAdcValuesIndex >= batteryAdcValuesSize) {
 			batteryAdcValuesIndex = 0;
-		}
-
-		HAL_ADC_Start(&hadc1);
-		batteryAdcValue = HAL_ADC_GetValue(&hadc1);
-		voltageBuffer[voltageBufferIndex++] = batteryAdcValue;
-		if(voltageBufferIndex >= voltageBufferSize) {
-			voltageBufferIndex = 0;
 		}
 
 		HAL_ADC_Start(&hadc1);
