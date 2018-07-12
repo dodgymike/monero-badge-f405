@@ -58,6 +58,7 @@ SPI_HandleTypeDef hspi2;
 /* Private variables ---------------------------------------------------------*/
 
 static GPIO_InitTypeDef  GPIO_InitStruct;
+uint32_t batteryAdcValue = 0;
 
 /* USER CODE END PV */
 
@@ -1204,7 +1205,6 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	}
 }
 
-uint32_t batteryAdcValue = 0;
 void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness) {
 	for(int i = 0; i < (24*24); i++) {
 		pixels[i] = 0;
@@ -1221,12 +1221,6 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	}
 
 	//drawText(brightness, 0, 9, "monero", 6);
-
-	//if (HAL_ADC_PollForConversion(&hadc1, 1000000) == HAL_OK) {
-	if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) {
-		batteryAdcValue = HAL_ADC_GetValue(&hadc1);
-		HAL_ADC_Start(&hadc1);
-	}
 
 	char batteryAdcValueText[4];
 	sprintf(batteryAdcValueText, "%0.4d", batteryAdcValue);
@@ -1287,6 +1281,9 @@ uint16_t readButtons() {
 	//int8_t buttonDebugString[40];
 	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
 	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
 
 	uint16_t buttonBits = 0;
         for(int bitCount = 0; bitCount < 16; bitCount++) {
@@ -1570,6 +1567,11 @@ int main(void)
 			debug(buttonState, buttonAccumulators, 1);
 		}
 		GenerateTestSPISignal();
+	}
+
+	if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) {
+		batteryAdcValue = HAL_ADC_GetValue(&hadc1);
+		HAL_ADC_Start(&hadc1);
 	}
 
 	uint16_t buttonBits = readButtons();
