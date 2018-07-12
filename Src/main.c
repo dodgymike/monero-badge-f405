@@ -1545,7 +1545,7 @@ int main(void)
 
 		uint32_t batteryAdcAccumulator = 0;
 		//for(uint32_t i = 0; i < batteryAdcValuesSize; i++) {
-		for(uint32_t adcValueIndex = 0; adcValueIndex < 1000; adcValueIndex++) {
+		for(uint32_t adcValueIndex = 0; adcValueIndex < batteryAdcValuesSize; adcValueIndex++) {
 			if(batteryAdcValues[adcValueIndex] > 4096) {
 				continue;
 			}
@@ -1563,7 +1563,7 @@ int main(void)
 		uint8_t startPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_START);
 
 		if(selectPressed && startPressed) {
-        		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+        		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
 		} else if(selectPressed) {
 			switch(gameMode) {
 				case MODE_RAIN:
