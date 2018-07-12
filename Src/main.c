@@ -71,6 +71,7 @@ static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
+void drawText(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t length);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -366,7 +367,6 @@ uint16_t BUTTON_L1     = 14;
 #define MODE_BLIND    0b0000000000000100
 #define MODE_RANDOM   0b0000000000001000
 #define MODE_DEBUG    0b0000000000010000
-#define MODE_SNAKE    0b0000000000100000
 
 
 static uint8_t start_frame_data[] = {
@@ -1211,7 +1211,7 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	}
 }
 
-void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness) {
+void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage) {
 	for(int i = 0; i < (24*24); i++) {
 		pixels[i] = 0;
 	}
@@ -1229,11 +1229,11 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	//drawText(brightness, 0, 9, "monero", 6);
 
 	char batteryAdcValueText[4];
-	sprintf(batteryAdcValueText, "%0.4d", batteryAdcAverage);
+	sprintf(batteryAdcValueText, "%.4lu", batteryAdcAverage);
 	drawText(brightness, 0, 9, batteryAdcValueText, 4);
 }
 
-void drawText(uint8_t brightness, uint8_t x, uint8_t y, uint8_t text[], uint8_t length) {
+void drawText(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t length) {
 	uint8_t xOffset = x;
 
 	for(int textIndex = 0; textIndex < length; textIndex++) {
@@ -1383,10 +1383,8 @@ int main(void)
     spi.Init.TIMode = SPI_TIMODE_DISABLED;
     spi.Init.Mode = SPI_MODE_MASTER;
 */
-	HAL_Delay(1000);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
-	HAL_Delay(1000);
+//	HAL_Delay(1000);
+//	HAL_Delay(1000);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -1396,9 +1394,12 @@ int main(void)
 	MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
 
+/*
 	for(int i = 0; i < 5; i++) {
         	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 	        HAL_Delay(500);
@@ -1406,6 +1407,7 @@ int main(void)
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 		HAL_Delay(500);
 	}
+*/
 
 	// IR TX
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
@@ -1418,6 +1420,11 @@ int main(void)
 
 	initMPU6000();
 	serialSend("DONE\r\n");
+
+	uint32_t batteryAdcAverage = 0;
+	uint32_t batteryAdcValuesSize = 3000;
+	uint32_t batteryAdcValues[batteryAdcValuesSize];
+	uint32_t batteryAdcValuesIndex = 0;
 
 	int bufferSize = 40;
 	initAccRingBuffer(bufferSize);
@@ -1439,6 +1446,10 @@ int main(void)
 
 	uint32_t last_tick = HAL_GetTick();
 	uint32_t buttonTicks = 0;
+
+	for(uint32_t i = 0; i < batteryAdcValuesSize; i++) {
+		batteryAdcValues[i] = 0;
+	}
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
@@ -1536,6 +1547,22 @@ int main(void)
 		last_tick = HAL_GetTick();
 		ClearPixels();
 
+		uint32_t batteryAdcAccumulator = 0;
+		//for(uint32_t i = 0; i < batteryAdcValuesSize; i++) {
+		for(uint32_t adcValueIndex = 0; adcValueIndex < 1000; adcValueIndex++) {
+			if(batteryAdcValues[adcValueIndex] > 4096) {
+				continue;
+			}
+			batteryAdcAccumulator += batteryAdcValues[adcValueIndex];
+		}
+		batteryAdcAverage = batteryAdcAccumulator / batteryAdcValuesSize;
+		if(batteryAdcAverage > 4096) {
+			batteryAdcAverage = 4096;
+		}
+/*
+*/
+
+
 		uint8_t selectPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT);
 		uint8_t startPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_START);
 
@@ -1570,18 +1597,18 @@ int main(void)
 		} else if(gameMode == MODE_SNAKE) {
 			snake(buttonState, buttonAccumulators, 1);
 		} else if(gameMode == MODE_DEBUG) {
-			debug(buttonState, buttonAccumulators, 1);
+			debug(buttonState, buttonAccumulators, 1, batteryAdcAverage);
 		}
 		GenerateTestSPISignal();
-
-		batteryAdcAverage = 0;
-		for(int i = 0; i < voltageBufferSize; i++) {
-			batteryAdcAverage += voltageBuffer[i];
-		}
-		batteryAdcAverage /= voltageBufferSize;
 	}
 
 	if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) {
+		batteryAdcValues[batteryAdcValuesIndex++] = HAL_ADC_GetValue(&hadc1);
+		if(batteryAdcValuesIndex >= batteryAdcValuesSize) {
+			batteryAdcValuesIndex = 0;
+		}
+
+		HAL_ADC_Start(&hadc1);
 		batteryAdcValue = HAL_ADC_GetValue(&hadc1);
 		voltageBuffer[voltageBufferIndex++] = batteryAdcValue;
 		if(voltageBufferIndex >= voltageBufferSize) {
