@@ -1477,6 +1477,7 @@ int main(void)
 	uint32_t batteryAdcValuesIndex = 0;
 	uint64_t batteryAdcTotalSampleCount = 0;
         float batteryVoltage = 0.0f;
+	uint8_t lowBattery = 0;
 
   int bufferSize = 40;
   initAccRingBuffer(bufferSize);
@@ -1614,16 +1615,15 @@ int main(void)
 		} 
 		batteryVoltage = 2.8f * batteryAdcAverage / 1000.0f;
 
-		uint8_t lowBattery = 0;
-		if(batteryAdcTotalSampleCount > batteryAdcValuesSize) { // wait for ADC low-pass to have enough samples during start-up
+		if(batteryAdcTotalSampleCount > (batteryAdcValuesSize * 20)) { // wait for ADC low-pass to have enough samples during start-up
 			if(batteryVoltage <= 7.0) {
 				// SHUTDOWN TIME!
 				disableLedPanel(&ledPanelEnabled);
 				disablePower();
-			} else if(batteryVoltage < 7.2) {
+			} else if(batteryVoltage < 7.1) {
 				// LOW POWER TIME!
 				lowBattery = 1;
-			} else if(batteryVoltage > 7.8) {
+			} else if(batteryVoltage > 7.6) {
 				lowBattery = 0;
 				enablePower();
 				enableLedPanel(&ledPanelEnabled);
