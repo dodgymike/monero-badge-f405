@@ -1207,11 +1207,7 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	}
 }
 
-void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage) {
-	for(int i = 0; i < (24*24); i++) {
-		pixels[i] = 0;
-	}
-
+void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage, float batteryVoltage) {
 	for(int i = 0; i < 16; i++) {
 		pixels[xyToLedIndex(i, 0)] = rgbToPixel(brightness, (buttonState[i] > 256) ? 20 : 0, (buttonState[i] <= 256) ? 20 : 0, 0);
 		pixels[xyToLedIndex(i, 1)] = rgbToPixel(brightness, (buttonAccumulators[i] > 256) ? 20 : 0, (buttonAccumulators[i] <= 256) ? 20 : 0, 0);
@@ -1227,6 +1223,10 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	char batteryAdcValueText[4];
 	sprintf(batteryAdcValueText, "%.4lu", batteryAdcAverage);
 	drawText(brightness, 0, 9, batteryAdcValueText, 4);
+
+	char batteryVoltageText[10];
+	sprintf(batteryVoltageText, "%2.2f", batteryVoltage);
+	drawText(brightness, 0, 15, batteryVoltageText, 5);
 }
 
 void drawText(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t length) {
@@ -1422,6 +1422,7 @@ int main(void)
 	uint32_t batteryAdcValuesSize = 3000;
 	uint32_t batteryAdcValues[batteryAdcValuesSize];
 	uint32_t batteryAdcValuesIndex = 0;
+        float batteryVoltage = 0.0f;
 
   int bufferSize = 40;
   initAccRingBuffer(bufferSize);
@@ -1554,7 +1555,8 @@ int main(void)
 		batteryAdcAverage = batteryAdcAccumulator / batteryAdcValuesSize;
 		if(batteryAdcAverage > 4096) {
 			batteryAdcAverage = 4096;
-		}
+		} 
+		batteryVoltage = 2.8f * batteryAdcAverage / 1000.0f;
 /*
 */
 
@@ -1593,7 +1595,7 @@ int main(void)
 		} else if(gameMode == MODE_SNAKE) {
 			snake(buttonState, buttonAccumulators, 1);
 		} else if(gameMode == MODE_DEBUG) {
-			debug(buttonState, buttonAccumulators, 1, batteryAdcAverage);
+			debug(buttonState, buttonAccumulators, 1, batteryAdcAverage, batteryVoltage);
 		}
 		GenerateTestSPISignal();
 	}
