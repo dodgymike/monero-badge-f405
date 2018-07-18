@@ -4,41 +4,52 @@
   * @file           : main.c
   * @brief          : Main program body
   ******************************************************************************
-  ** This notice applies to any and all portions of this file
+  * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
   * USER CODE END. Other portions of this file, whether 
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * COPYRIGHT(c) 2018 STMicroelectronics
+  * Copyright (c) 2018 STMicroelectronics International N.V. 
+  * All rights reserved.
   *
-  * Redistribution and use in source and binary forms, with or without modification,
-  * are permitted provided that the following conditions are met:
-  *   1. Redistributions of source code must retain the above copyright notice,
-  *      this list of conditions and the following disclaimer.
-  *   2. Redistributions in binary form must reproduce the above copyright notice,
-  *      this list of conditions and the following disclaimer in the documentation
-  *      and/or other materials provided with the distribution.
-  *   3. Neither the name of STMicroelectronics nor the names of its contributors
-  *      may be used to endorse or promote products derived from this software
-  *      without specific prior written permission.
+  * Redistribution and use in source and binary forms, with or without 
+  * modification, are permitted, provided that the following conditions are met:
   *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * 1. Redistribution of source code must retain the above copyright notice, 
+  *    this list of conditions and the following disclaimer.
+  * 2. Redistributions in binary form must reproduce the above copyright notice,
+  *    this list of conditions and the following disclaimer in the documentation
+  *    and/or other materials provided with the distribution.
+  * 3. Neither the name of STMicroelectronics nor the names of other 
+  *    contributors to this software may be used to endorse or promote products 
+  *    derived from this software without specific written permission.
+  * 4. This software, including modifications and/or derivative works of this 
+  *    software, must execute solely and exclusively on microcontroller or
+  *    microprocessor devices manufactured by or for STMicroelectronics.
+  * 5. Redistribution and use of this software other than as permitted under 
+  *    this license is void and will automatically terminate your rights under 
+  *    this license. 
+  *
+  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
+  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
+  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
+  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
+  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
+  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_hal.h"
+#include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -815,6 +826,21 @@ void blind(uint32_t colour) {
 	}
 }
 
+void lowBatteryScreen(uint32_t brightness, uint32_t* batteryFlashCounter) {
+	if((*batteryFlashCounter)++ % 50 > 25) {
+		for(int y = 9; y < 9 + 6; y++) {
+			pixels[xyToLedIndex(10, y)] = rgbToPixel(brightness, 0, 0, 1);
+			pixels[xyToLedIndex(13, y)] = rgbToPixel(brightness, 0, 0, 1);
+		}
+		
+		for(int x = 11; x <= 12; x++) {
+			pixels[xyToLedIndex(x, 8)] = rgbToPixel(brightness, 0, 0, 1);
+			pixels[xyToLedIndex(x, 9)] = rgbToPixel(brightness, 0, 0, 1);
+			pixels[xyToLedIndex(x, 14)] = rgbToPixel(brightness, 0, 0, 1);
+		}
+	}
+}
+
 void random_pixels(uint32_t brightness) {
 	for(int i = 0; i < 576; i++) {
 		pixels[i] = rgbToPixel(brightness, rand(), rand(), rand());
@@ -1311,6 +1337,28 @@ uint16_t readButtons() {
 	return buttonBits;
 }
 
+void enablePower() {
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+}
+
+void disablePower() {
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+}
+
+void enableLedPanel(uint8_t *ledPanelEnabled) {
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+	*ledPanelEnabled = 1;
+}
+
+void disableLedPanel(uint8_t *ledPanelEnabled) {
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+
+	ClearPixels();
+	GenerateTestSPISignal();
+
+	*ledPanelEnabled = 0;
+}
+
 
 /* USER CODE END 0 */
 
@@ -1389,12 +1437,17 @@ int main(void)
   MX_SPI2_Init();
   MX_SPI1_Init();
   MX_ADC1_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+
+	uint32_t lowBatteryFlashCounter = 0;
+	uint8_t ledPanelEnabled = 0;
+
+	disablePower();
+	enablePower();
 
 /*
 	for(int i = 0; i < 5; i++) {
@@ -1422,6 +1475,7 @@ int main(void)
 	uint32_t batteryAdcValuesSize = 3000;
 	uint32_t batteryAdcValues[batteryAdcValuesSize];
 	uint32_t batteryAdcValuesIndex = 0;
+	uint64_t batteryAdcTotalSampleCount = 0;
         float batteryVoltage = 0.0f;
 
   int bufferSize = 40;
@@ -1451,7 +1505,9 @@ int main(void)
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+
+	enableLedPanel(&ledPanelEnabled);
+
   //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
@@ -1557,6 +1613,22 @@ int main(void)
 			batteryAdcAverage = 4096;
 		} 
 		batteryVoltage = 2.8f * batteryAdcAverage / 1000.0f;
+
+		uint8_t lowBattery = 0;
+		if(batteryAdcTotalSampleCount > batteryAdcValuesSize) { // wait for ADC low-pass to have enough samples during start-up
+			if(batteryVoltage <= 7.0) {
+				// SHUTDOWN TIME!
+				disableLedPanel(&ledPanelEnabled);
+				disablePower();
+			} else if(batteryVoltage < 7.2) {
+				// LOW POWER TIME!
+				lowBattery = 1;
+			} else if(batteryVoltage > 7.8) {
+				lowBattery = 0;
+				enablePower();
+				enableLedPanel(&ledPanelEnabled);
+			}
+		} 
 /*
 */
 
@@ -1565,7 +1637,8 @@ int main(void)
 		uint8_t startPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_START);
 
 		if(selectPressed && startPressed) {
-        		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+        		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+        		disablePower();
 		} else if(selectPressed) {
 			switch(gameMode) {
 				case MODE_RAIN:
@@ -1586,7 +1659,9 @@ int main(void)
 			}
 		}
 
-		if(gameMode == MODE_RAIN) {
+		if(lowBattery) {
+			lowBatteryScreen(1, &lowBatteryFlashCounter);
+		} else if(gameMode == MODE_RAIN) {
 			rain(mean_x, mean_y, buttonState, buttonAccumulators);
 		} else if(gameMode == MODE_BLIND) {
 			blind(rgbToPixel(1, 0xff, 0xff, 0xff));
@@ -1597,7 +1672,10 @@ int main(void)
 		} else if(gameMode == MODE_DEBUG) {
 			debug(buttonState, buttonAccumulators, 1, batteryAdcAverage, batteryVoltage);
 		}
-		GenerateTestSPISignal();
+
+		if(ledPanelEnabled) {
+			GenerateTestSPISignal();
+		}
 	}
 
 	if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) {
@@ -1605,6 +1683,8 @@ int main(void)
 		if(batteryAdcValuesIndex >= batteryAdcValuesSize) {
 			batteryAdcValuesIndex = 0;
 		}
+
+		batteryAdcTotalSampleCount++;
 
 		HAL_ADC_Start(&hadc1);
 	}
@@ -1660,7 +1740,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 13;
-  RCC_OscInitStruct.PLL.PLLN = 168;
+  RCC_OscInitStruct.PLL.PLLN = 72;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 3;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -1674,10 +1754,10 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -1703,7 +1783,7 @@ static void MX_ADC1_Init(void)
     /**Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
     */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
