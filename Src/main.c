@@ -704,7 +704,7 @@ void ClearPixels()
 	}
 }
 
-void GenerateTestSPISignal()
+void WriteLedPanelFrame()
 {
 
 	uint8_t led_frame_size = 4;
@@ -724,14 +724,21 @@ void GenerateTestSPISignal()
 
 	for(uint16_t led_count = 0; led_count < 576; led_count++) {
 		if(pixels[led_count] > 0) {
-			//uint8_t brightness = (pixels[led_count] >> 24) & 0xff;
-			//uint8_t red = (pixels[led_count] >> 16) & 0xff;
-			//uint8_t green = (pixels[led_count] >> 8) & 0xff;
-			//uint8_t blue = pixels[led_count] & 0xff;
+/*
+			uint8_t brightness = (pixels[led_count] >> 24) & 0xff;
+			uint8_t red = (pixels[led_count] >> 16) & 0xff;
+			uint8_t green = (pixels[led_count] >> 8) & 0xff;
+			uint8_t blue = pixels[led_count] & 0xff;
+*/
 			uint8_t brightness = 0b11110000;
+			uint8_t red = (pixels[led_count] >> 16) & 0xff;
+			uint8_t green = (pixels[led_count] >> 8) & 0xff;
+			uint8_t blue = pixels[led_count] & 0xff;
+/*
 			uint8_t red = ((pixels[led_count] >> 16) & 0xff) > 0 ? 1 : 0;
 			uint8_t green = ((pixels[led_count] >> 8) & 0xff) > 0 ? 1 : 0;
 			uint8_t blue = (pixels[led_count] & 0xff) > 0 ? 1 : 0;
+*/
 
 			uint8_t led_data[] = {
 				//brightness, 0x05, 0x05, 0x05
@@ -765,11 +772,15 @@ uint16_t xyToLedIndex(uint8_t x, uint8_t y) {
 */
 
 	ledIndex = y * 24;
+	ledIndex += x;
+/*
+	// for badge with alternating up/down rows
 	if(y % 2 == 0) {
 		ledIndex += x;
 	} else {
 		ledIndex += 23 - x;
 	}
+*/
 
 	if(ledIndex >= 576) {
 		ledIndex = 0;
@@ -1310,8 +1321,9 @@ uint16_t readButtons() {
 	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
 	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
 
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
+	// WEIRD CLOCKING PROBLEM, WHICH NO LONGER APPLIES
+	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
+	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
 
 	uint16_t buttonBits = 0;
         for(int bitCount = 0; bitCount < 16; bitCount++) {
@@ -1354,7 +1366,7 @@ void disableLedPanel(uint8_t *ledPanelEnabled) {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
 
 	ClearPixels();
-	GenerateTestSPISignal();
+	WriteLedPanelFrame();
 
 	*ledPanelEnabled = 0;
 }
@@ -1674,7 +1686,7 @@ int main(void)
 		}
 
 		if(ledPanelEnabled) {
-			GenerateTestSPISignal();
+			WriteLedPanelFrame();
 		}
 	}
 
@@ -1848,7 +1860,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
   hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_LSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi2.Init.CRCPolynomial = 10;
@@ -1890,7 +1902,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB0 PB11 PB7 */
@@ -1903,14 +1915,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PC10 */
   GPIO_InitStruct.Pin = GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PC11 */
