@@ -1616,14 +1616,14 @@ int main(void)
 		batteryVoltage = 2.8f * batteryAdcAverage / 1000.0f;
 
 		if(batteryAdcTotalSampleCount > (batteryAdcValuesSize * 20)) { // wait for ADC low-pass to have enough samples during start-up
-			if(batteryVoltage <= 7.0) {
+			if(batteryVoltage <= 6.6) {
 				// SHUTDOWN TIME!
 				disableLedPanel(&ledPanelEnabled);
 				disablePower();
-			} else if(batteryVoltage < 7.1) {
+			} else if(batteryVoltage < 6.9) {
 				// LOW POWER TIME!
 				lowBattery = 1;
-			} else if(batteryVoltage > 7.6) {
+			} else if(batteryVoltage > 7.5) {
 				lowBattery = 0;
 				enablePower();
 				enableLedPanel(&ledPanelEnabled);
