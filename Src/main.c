@@ -694,7 +694,8 @@ void readAcc(int16_t *accData)
 }
 
 uint32_t rgbToPixel(uint32_t brightness, uint32_t red, uint32_t green, uint32_t blue) {
-	return (((brightness << 3) | 0b00000111) << 24) + (red << 16) + (green << 8) + blue;
+	//return (((brightness << 3) | 0b00000111) << 24) + (red << 16) + (green << 8) + blue;
+	return (((brightness) | 0b11100000) << 24) + (red << 16) + (green << 8) + blue;
 }
 
 void ClearPixels()
@@ -730,7 +731,8 @@ void WriteLedPanelFrame()
 			uint8_t green = (pixels[led_count] >> 8) & 0xff;
 			uint8_t blue = pixels[led_count] & 0xff;
 */
-			uint8_t brightness = 0b11110000;
+			//uint8_t brightness = 0b11110000;
+			uint8_t brightness = (pixels[led_count] >> 24) & 0xff;
 			uint8_t red = (pixels[led_count] >> 16) & 0xff;
 			uint8_t green = (pixels[led_count] >> 8) & 0xff;
 			uint8_t blue = pixels[led_count] & 0xff;
@@ -742,7 +744,7 @@ void WriteLedPanelFrame()
 
 			uint8_t led_data[] = {
 				//brightness, 0x05, 0x05, 0x05
-				brightness, red, green, blue
+				brightness, blue, green, red
 			};
 			HAL_SPI_Transmit(&hspi2, led_data, led_frame_size, HAL_MAX_DELAY);
 		} else {
@@ -854,23 +856,27 @@ void lowBatteryScreen(uint32_t brightness, uint32_t* batteryFlashCounter) {
 
 void random_pixels(uint32_t brightness) {
 	for(int i = 0; i < 576; i++) {
-		pixels[i] = rgbToPixel(brightness, rand(), rand(), rand());
+		pixels[i] = rgbToPixel(brightness, rand() % 0b11111, rand() % 0b11111, rand() % 0b11111);
 	}
 }
 
 static const uint8_t maxParticles = 32;
 struct Particle* particles[32];
-uint32_t rainBrightness = 1;
-uint32_t rainRed = 5;
-uint32_t rainGreen = 5;
-uint32_t rainBlue = 5;
+uint32_t rainBrightness = 0b111;
+uint32_t rainRed = 0b11111;
+uint32_t rainGreen = 0b11111;
+uint32_t rainBlue = 0b11111;
 
 void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulators[16]) {
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_START)) {
-		rainBrightness++;
-		if((rainBrightness < 0) || (rainBrightness >= 0b11100000)) {
-			rainBrightness = 1;
-		} 
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1)) {
+		if(rainBrightness > 0) {
+			rainBrightness--;
+		}
+	}
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3)) {
+		if(rainBrightness < 0b00011111) {
+			rainBrightness++;
+		}
 	}
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4)) {
 		if(rainRed > 0) {
@@ -940,6 +946,17 @@ void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulat
 			}
 		}
 	}
+
+	// DEBUG
+	for(int bitIndex = 0; bitIndex < 8; bitIndex++) {
+		uint32_t rainBrightnessLedLevel = ((rainBrightness >> bitIndex) & 1) ? 0b00001000 : 0;
+
+		pixels[xyToLedIndex(bitIndex, 0)] = rgbToPixel(rainBrightness, ((rainBlue >> bitIndex) & 1) ? 0b00001000 : 0, 0, 0);
+		pixels[xyToLedIndex(bitIndex, 1)] = rgbToPixel(rainBrightness, 0, ((rainGreen >> bitIndex) & 1) ? 0b00001000 : 0, 0);
+		pixels[xyToLedIndex(bitIndex, 2)] = rgbToPixel(rainBrightness, 0, 0, ((rainRed >> bitIndex) & 1) ? 0b00001000 : 0);
+		pixels[xyToLedIndex(bitIndex, 3)] = rgbToPixel(rainBrightness, rainBrightnessLedLevel, rainBrightnessLedLevel, rainBrightnessLedLevel);
+	}
+	// /DEBUG
 }
 
 struct SnakePlayer {
@@ -1070,7 +1087,7 @@ void initSnakePlayer(struct SnakePlayer* snakePlayer) {
 	snakePlayer->playing = 1;
 	snakePlayer->x = rand() % 24;
 	snakePlayer->y = rand() % 24;
-	snakePlayer->colour = rgbToPixel(20, rand() % 255, rand() % 255, rand() % 255);
+	snakePlayer->colour = rgbToPixel(20, rand() % 0b11111, rand() % 0b11111, rand() % 0b11111);
 	snakePlayer->location = 0;
 	snakePlayer->direction = 0;
 	snakePlayer->lastMovementTick = 0;
@@ -1239,7 +1256,7 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	// DRAW SNAKE FOOD
 	for(int snakeFoodIndex = 0; snakeFoodIndex < snakeGame.snakeCount; snakeFoodIndex++) {
 		if(snakeGame.snakeFood[snakeFoodIndex] != NULL) {
-			pixels[xyToLedIndex(snakeGame.snakeFood[snakeFoodIndex]->x, snakeGame.snakeFood[snakeFoodIndex]->y)] = rgbToPixel(20, 20, 0, 0);
+			pixels[xyToLedIndex(snakeGame.snakeFood[snakeFoodIndex]->x, snakeGame.snakeFood[snakeFoodIndex]->y)] = rgbToPixel(0b111, 0b11111, 0, 0);
 		}
 	}
 }
@@ -1260,10 +1277,15 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	char batteryAdcValueText[4];
 	sprintf(batteryAdcValueText, "%.4lu", batteryAdcAverage);
 	drawText(brightness, 0, 9, batteryAdcValueText, 4);
+	CDC_Transmit_FS(batteryAdcValueText, strlen(batteryAdcValueText));
+	CDC_Transmit_FS("\n", 1);
+
 
 	char batteryVoltageText[10];
 	sprintf(batteryVoltageText, "%2.2f", batteryVoltage);
 	drawText(brightness, 0, 15, batteryVoltageText, 5);
+	CDC_Transmit_FS(batteryVoltageText, strlen(batteryVoltageText));
+	CDC_Transmit_FS("\n", 1);
 }
 
 void drawText(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t length) {
@@ -1608,7 +1630,6 @@ int main(void)
 	//sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
 	//serialSend(accDebugString);
 
-
 	if(HAL_GetTick() - last_tick > 50) {
 		last_tick = HAL_GetTick();
 		ClearPixels();
@@ -1672,17 +1693,17 @@ int main(void)
 		}
 
 		if(lowBattery) {
-			lowBatteryScreen(1, &lowBatteryFlashCounter);
+			lowBatteryScreen(0b111, &lowBatteryFlashCounter);
 		} else if(gameMode == MODE_RAIN) {
 			rain(mean_x, mean_y, buttonState, buttonAccumulators);
 		} else if(gameMode == MODE_BLIND) {
-			blind(rgbToPixel(1, 0xff, 0xff, 0xff));
+			blind(rgbToPixel(0b111, 0b11111, 0b11111, 0b11111));
 		} else if(gameMode == MODE_RANDOM) {
-			random_pixels(1);
+			random_pixels(0b111);
 		} else if(gameMode == MODE_SNAKE) {
-			snake(buttonState, buttonAccumulators, 1);
+			snake(buttonState, buttonAccumulators, 0b111);
 		} else if(gameMode == MODE_DEBUG) {
-			debug(buttonState, buttonAccumulators, 1, batteryAdcAverage, batteryVoltage);
+			debug(buttonState, buttonAccumulators, 0b111, batteryAdcAverage, batteryVoltage);
 		}
 
 		if(ledPanelEnabled) {
@@ -1856,11 +1877,11 @@ static void MX_SPI2_Init(void)
   hspi2.Init.Mode = SPI_MODE_MASTER;
   hspi2.Init.Direction = SPI_DIRECTION_2LINES;
   hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_HIGH;
+  hspi2.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
   hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-  hspi2.Init.FirstBit = SPI_FIRSTBIT_LSB;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi2.Init.CRCPolynomial = 10;
@@ -1902,7 +1923,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB0 PB11 PB7 */
@@ -1915,14 +1936,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PC10 */
   GPIO_InitStruct.Pin = GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PC11 */
@@ -1934,7 +1955,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
 /* USER CODE END 4 */
 
 /**
