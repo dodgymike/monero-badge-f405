@@ -794,7 +794,7 @@ void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulat
 	// /DEBUG
 }
 
-void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage, float batteryVoltage) {
+void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage, uint32_t batteryVoltage100) {
 	for(int i = 0; i < 16; i++) {
 		setPixel(i, 0, brightness, (buttonState[i] > 256) ? 20 : 0, (buttonState[i] <= 256) ? 20 : 0, 0);
 		setPixel(i, 1, brightness, (buttonAccumulators[i] > 256) ? 20 : 0, (buttonAccumulators[i] <= 256) ? 20 : 0, 0);
@@ -811,9 +811,11 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	sprintf(batteryAdcValueText, "%.4lu", batteryAdcAverage);
 	drawText(brightness, 0, 9, batteryAdcValueText, 4);
 
-
+	//uint8_t batteryVoltageMajor = batteryVoltage100/100;
+	//uint8_t batteryVoltageMinor = (batteryVoltage100 - (batteryVoltageMajor * 100));
 	char batteryVoltageText[10];
-	sprintf(batteryVoltageText, "%2.2f", batteryVoltage);
+	sprintf(batteryVoltageText, "%d", batteryVoltage100);
+
 	drawText(brightness, 0, 15, batteryVoltageText, 5);
 /*
 	CDC_Transmit_FS(batteryAdcValueText, strlen(batteryAdcValueText));
@@ -1030,7 +1032,7 @@ int main(void)
 	uint32_t batteryAdcValues[batteryAdcValuesSize];
 	uint32_t batteryAdcValuesIndex = 0;
 	uint64_t batteryAdcTotalSampleCount = 0;
-        float batteryVoltage = 0.0f;
+        uint32_t batteryVoltage100 = 0;
 	uint8_t lowBattery = 0;
 
   int bufferSize = 40;
@@ -1151,12 +1153,12 @@ int main(void)
 	//sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
 	//serialSend(accDebugString);
 
+/*
 	if(HAL_GetTick() - lastButtonPressTick > 60000) {
 		disableLedPanel(&ledPanelEnabled);
 	} else {
 		enableLedPanel(&ledPanelEnabled);
 	}
-/*
 */
 
 	if(HAL_GetTick() - last_tick > 50) {
@@ -1175,10 +1177,10 @@ int main(void)
 		if(batteryAdcAverage > 4096) {
 			batteryAdcAverage = 4096;
 		} 
-		batteryVoltage = 2.8f * batteryAdcAverage / 1000.0f;
+		batteryVoltage100 = 2.33 * (batteryAdcAverage / 10);
 
 		if(batteryAdcTotalSampleCount > (batteryAdcValuesSize * 20)) { // wait for ADC low-pass to have enough samples during start-up
-			if(batteryVoltage <= 6.6) {
+			if(batteryVoltage100 <= 610) {
 				// SHUTDOWN TIME!
 				// NO FURTHER PROCESSING
 				disableLedPanel(&ledPanelEnabled);
@@ -1186,7 +1188,7 @@ int main(void)
 				while(1) {}
 				// NO FURTHER PROCESSING
 				// NO FURTHER PROCESSING
-			} else if(batteryVoltage < 6.9) {
+			} else if(batteryVoltage100 < 650) {
 				// LOW POWER TIME!
 				lowBattery = 1;
 			}
@@ -1242,7 +1244,7 @@ int main(void)
 		} else if(gameMode == MODE_EYE) {
 			eye(0b1111);
 		} else if(gameMode == MODE_DEBUG) {
-			debug(buttonState, buttonAccumulators, 0b111, batteryAdcAverage, batteryVoltage);
+			debug(buttonState, buttonAccumulators, 0b111, batteryAdcAverage, batteryVoltage100);
 		}
 
 		WriteLedPanelFrame(ledPanelEnabled);
