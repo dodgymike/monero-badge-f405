@@ -357,6 +357,7 @@ static uint8_t characters[37 * 6] = {
 #define MODE_BLIND    0b0000000000000100
 #define MODE_RANDOM   0b0000000000001000
 #define MODE_DEBUG    0b0000000000010000
+#define MODE_EYE      0b0000000000100000
 
 
 uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button, uint32_t* lastButtonPressTick) {
@@ -1148,7 +1149,7 @@ int main(void)
 	//sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
 	//serialSend(accDebugString);
 
-	if(HAL_GetTick() - lastButtonPressTick > 2000) {
+	if(HAL_GetTick() - lastButtonPressTick > 60000) {
 		disableLedPanel(&ledPanelEnabled);
 	} else {
 		enableLedPanel(&ledPanelEnabled);
@@ -1209,6 +1210,9 @@ int main(void)
 					gameMode = MODE_SNAKE;
 					break;
 				case MODE_SNAKE:
+					gameMode = MODE_EYE;
+					break;
+				case MODE_EYE:
 					gameMode = MODE_DEBUG;
 					break;
 				case MODE_DEBUG:
@@ -1233,6 +1237,8 @@ int main(void)
 			random_pixels(0b111);
 		} else if(gameMode == MODE_SNAKE) {
 			snake(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick);
+		} else if(gameMode == MODE_EYE) {
+			eye(0b111);
 		} else if(gameMode == MODE_DEBUG) {
 			debug(buttonState, buttonAccumulators, 0b111, batteryAdcAverage, batteryVoltage);
 		}
