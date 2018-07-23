@@ -82,6 +82,8 @@ Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c \
 Src/usbd_cdc_if.c \
 Src/usb_device.c \
+Src/snake.c \
+Src/led_panel.c \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c
 
 # ASM sources

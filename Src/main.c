@@ -52,11 +52,14 @@
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
-
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include "mpu6000.h"
+#include "snake.h"
+#include "buttons.h"
+#include "led_panel.h"
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -349,50 +352,12 @@ static uint8_t characters[37 * 6] = {
 	0b0000,
 };
 
-//static uint16_t missingLeds[] = { 460, 461 };
-static uint16_t missingLeds[] = { };
-static uint8_t missingLedCount = 0;
-
-static uint32_t pixels[576];
-
-uint16_t BUTTON_SELECT = 5;
-uint16_t BUTTON_START  = 6;
-uint16_t BUTTON_R4     = 7;
-uint16_t BUTTON_R3     = 8;
-uint16_t BUTTON_R2     = 9;
-uint16_t BUTTON_R1     = 10;
-uint16_t BUTTON_L4     = 11;
-uint16_t BUTTON_L3     = 12;
-uint16_t BUTTON_L2     = 13;
-uint16_t BUTTON_L1     = 14;
-
 #define MODE_RAIN     0b0000000000000001
 #define MODE_SNAKE    0b0000000000000010
 #define MODE_BLIND    0b0000000000000100
 #define MODE_RANDOM   0b0000000000001000
 #define MODE_DEBUG    0b0000000000010000
 
-
-static uint8_t start_frame_data[] = {
-	0x00, 0x00, 0x00, 0x00, /* start frame */
-	0x00, 0x00, 0x00, 0x00, /* start frame */
-	0x00, 0x00, 0x00, 0x00, /* start frame */
-	0x00, 0x00, 0x00, 0x00, /* start frame */
-	0x00, 0x00, 0x00, 0x00, /* start frame */
-	0x00, 0x00, 0x00, 0x00, /* start frame */
-	0x00, 0x00, 0x00, 0x00, /* start frame */
-	0x00, 0x00, 0x00, 0x00, /* start frame */
-};
-static uint8_t end_frame_data[] = {
-	0xff, 0xff, 0xff, 0xff, /* end frame */
-	0xff, 0xff, 0xff, 0xff, /* end frame */
-	0xff, 0xff, 0xff, 0xff, /* end frame */
-	0xff, 0xff, 0xff, 0xff, /* end frame */
-	0xff, 0xff, 0xff, 0xff, /* end frame */
-	0xff, 0xff, 0xff, 0xff, /* end frame */
-	0xff, 0xff, 0xff, 0xff, /* end frame */
-	0xff, 0xff, 0xff, 0xff /* end frame */
-};
 
 uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button) {
 	uint8_t buttonPressed = 0;
@@ -693,170 +658,39 @@ void readAcc(int16_t *accData)
 */
 }
 
-uint32_t rgbToPixel(uint32_t brightness, uint32_t red, uint32_t green, uint32_t blue) {
-	//return (((brightness << 3) | 0b00000111) << 24) + (red << 16) + (green << 8) + blue;
-	return (((brightness) | 0b11100000) << 24) + (red << 16) + (green << 8) + blue;
-}
-
-void ClearPixels()
-{
-	for(uint16_t ledIndex = 0; ledIndex < 576; ledIndex++) {
-		pixels[ledIndex] = 0;
-	}
-}
-
-void WriteLedPanelFrame()
-{
-
-	uint8_t led_frame_size = 4;
-	uint8_t offBrightness = 0b11110000;
-
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-
-        HAL_SPI_Transmit(&hspi2, start_frame_data, led_frame_size * 2, HAL_MAX_DELAY);
-
-	uint8_t off_led_data[] = {
-		//0x00000111, 0x00, 0x00, 0x00
-		//0x11100000, 0x00, 0x00, 0x00
-		offBrightness, 0x00, 0x00, 0x00
-		//0x00, 0x01, 0x01, 0x01
-		//0x00, 0x00, 0x00, 0x00
-	};
-
-	for(uint16_t led_count = 0; led_count < 576; led_count++) {
-		if(pixels[led_count] > 0) {
-/*
-			uint8_t brightness = (pixels[led_count] >> 24) & 0xff;
-			uint8_t red = (pixels[led_count] >> 16) & 0xff;
-			uint8_t green = (pixels[led_count] >> 8) & 0xff;
-			uint8_t blue = pixels[led_count] & 0xff;
-*/
-			//uint8_t brightness = 0b11110000;
-			uint8_t brightness = (pixels[led_count] >> 24) & 0xff;
-			uint8_t red = (pixels[led_count] >> 16) & 0xff;
-			uint8_t green = (pixels[led_count] >> 8) & 0xff;
-			uint8_t blue = pixels[led_count] & 0xff;
-/*
-			uint8_t red = ((pixels[led_count] >> 16) & 0xff) > 0 ? 1 : 0;
-			uint8_t green = ((pixels[led_count] >> 8) & 0xff) > 0 ? 1 : 0;
-			uint8_t blue = (pixels[led_count] & 0xff) > 0 ? 1 : 0;
-*/
-
-			uint8_t led_data[] = {
-				//brightness, 0x05, 0x05, 0x05
-				brightness, blue, green, red
-			};
-			HAL_SPI_Transmit(&hspi2, led_data, led_frame_size, HAL_MAX_DELAY);
-		} else {
-			HAL_SPI_Transmit(&hspi2, off_led_data, led_frame_size, HAL_MAX_DELAY);
-		}
-	}
-
-        HAL_SPI_Transmit(&hspi2, end_frame_data, led_frame_size * 8, HAL_MAX_DELAY);
-
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-
-        //HAL_Delay(10);
-
-}
-
-uint16_t xyToLedIndex(uint8_t x, uint8_t y) {
-	uint16_t ledIndex = 0;
-/*
-	// for 8x8 panels in 3x3 configuration
-	if(y < 8) {
-		ledIndex = (x * 8) + y;
-	} else if(y < 16) {
-		ledIndex = 192 + (x * 8) + (y - 8);
-	} else {
-		ledIndex = 384 + (x * 8) + (y - 16);
-	}
-*/
-
-	ledIndex = y * 24;
-	ledIndex += x;
-/*
-	// for badge with alternating up/down rows
-	if(y % 2 == 0) {
-		ledIndex += x;
-	} else {
-		ledIndex += 23 - x;
-	}
-*/
-
-	if(ledIndex >= 576) {
-		ledIndex = 0;
-	}
-
-	if(missingLedCount > 0) {
-		uint16_t originalLedIndex = ledIndex;
-
-		for(int i = 0; i < missingLedCount; i++) {
-			if(originalLedIndex >= missingLeds[i]) {
-				ledIndex--;
-			}
-		}
-	}
-
-	return ledIndex;
-}
-
-const uint8_t maxRadius = 12;
-
-float rotation = 0;
-uint8_t radius = 12;
-void rotateLine() {
-	uint16_t ledIndex = 0;
-	uint8_t x = 0;
-	uint8_t y = 0;
-
-	for(int i = maxRadius; i >= radius; i--) {
-		x = maxRadius + (sin(rotation) * i);
-		y = maxRadius + (cos(rotation) * i);
-
-		ledIndex = xyToLedIndex(x, y);
-		pixels[ledIndex] = 1;
-	}
-
-	rotation += 0.1;
-	if(rotation > 6.28) {
-		rotation = 0;
-		radius--;
-		if(radius <= 1) {
-			radius = maxRadius;
-		}
-	}
-}
-
 struct Particle {
 	uint8_t x;
 	uint8_t y;
 };
 
-void blind(uint32_t colour) {
-	for(int i = 0; i < 576; i++) {
-		pixels[i] = colour;
+void blind(uint32_t brightness, uint32_t whiteLevel) {
+	for(uint8_t x = 0; x < 24; x++) {
+		for(uint8_t y = 0; y < 24; y++) {
+			setPixel(x, y, brightness, whiteLevel, whiteLevel, whiteLevel);
+		}
 	}
 }
 
 void lowBatteryScreen(uint32_t brightness, uint32_t* batteryFlashCounter) {
 	if((*batteryFlashCounter)++ % 50 > 25) {
 		for(int y = 9; y < 9 + 6; y++) {
-			pixels[xyToLedIndex(10, y)] = rgbToPixel(brightness, 0, 0, 1);
-			pixels[xyToLedIndex(13, y)] = rgbToPixel(brightness, 0, 0, 1);
+			setPixel(10, y, brightness, 0, 0, 1);
+			setPixel(13, y, brightness, 0, 0, 1);
 		}
 		
 		for(int x = 11; x <= 12; x++) {
-			pixels[xyToLedIndex(x, 8)] = rgbToPixel(brightness, 0, 0, 1);
-			pixels[xyToLedIndex(x, 9)] = rgbToPixel(brightness, 0, 0, 1);
-			pixels[xyToLedIndex(x, 14)] = rgbToPixel(brightness, 0, 0, 1);
+			setPixel(x, 8, brightness, 0, 0, 1);
+			setPixel(x, 9, brightness, 0, 0, 1);
+			setPixel(x, 14, brightness, 0, 0, 1);
 		}
 	}
 }
 
 void random_pixels(uint32_t brightness) {
-	for(int i = 0; i < 576; i++) {
-		pixels[i] = rgbToPixel(brightness, rand() % 0b11111, rand() % 0b11111, rand() % 0b11111);
+	for(uint8_t x = 0; x < 24; x++) {
+		for(uint8_t y = 0; y < 24; y++) {
+			setPixel(x, y, brightness, rand() % 0b11111, rand() % 0b11111, rand() % 0b11111);
+		}
 	}
 }
 
@@ -926,13 +760,11 @@ void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulat
 		}
 	}
 
-	uint32_t rainColour = rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue);
+	//uint32_t rainColour = rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue);
 
 	for(int i = 0; i < maxParticles; i++) {
 		if(particles[i] != NULL) {
-			uint16_t ledIndex = xyToLedIndex(particles[i]->x, particles[i]->y);
-			//pixels[ledIndex] = 1;
-			pixels[ledIndex] = rainColour;
+			setPixel(particles[i]->x, particles[i]->y, rainBrightness, rainRed, rainGreen, rainBlue);
 
 			if(xAcc >= 0) {
 				particles[i]->y++;
@@ -951,325 +783,23 @@ void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulat
 	for(int bitIndex = 0; bitIndex < 8; bitIndex++) {
 		uint32_t rainBrightnessLedLevel = ((rainBrightness >> bitIndex) & 1) ? 0b00001000 : 0;
 
-		pixels[xyToLedIndex(bitIndex, 0)] = rgbToPixel(rainBrightness, ((rainBlue >> bitIndex) & 1) ? 0b00001000 : 0, 0, 0);
-		pixels[xyToLedIndex(bitIndex, 1)] = rgbToPixel(rainBrightness, 0, ((rainGreen >> bitIndex) & 1) ? 0b00001000 : 0, 0);
-		pixels[xyToLedIndex(bitIndex, 2)] = rgbToPixel(rainBrightness, 0, 0, ((rainRed >> bitIndex) & 1) ? 0b00001000 : 0);
-		pixels[xyToLedIndex(bitIndex, 3)] = rgbToPixel(rainBrightness, rainBrightnessLedLevel, rainBrightnessLedLevel, rainBrightnessLedLevel);
+		setPixel(bitIndex, 0, rainBrightness, ((rainBlue >> bitIndex) & 1) ? 0b00001000 : 0, 0, 0);
+		setPixel(bitIndex, 1, rainBrightness, 0, ((rainGreen >> bitIndex) & 1) ? 0b00001000 : 0, 0);
+		setPixel(bitIndex, 2, rainBrightness, 0, 0, ((rainRed >> bitIndex) & 1) ? 0b00001000 : 0);
+		setPixel(bitIndex, 3, rainBrightness, rainBrightnessLedLevel, rainBrightnessLedLevel, rainBrightnessLedLevel);
 	}
 	// /DEBUG
 }
 
-struct SnakePlayer {
-	int16_t x;
-	int16_t y;
-	
-	uint32_t colour;
-
-	// 0 = North
-	// 1 = East
-	// 2 = South
-	// 3 = West
-	uint8_t direction;
-
-	// 0 = left buttons on home badge
-	// 1 = right buttons on home badge
-	uint32_t location;
-
-	uint8_t playing;
-
-	uint32_t lastMovementTick;
-	uint32_t speed;
-
-	uint8_t tailSize;
-
-	struct SnakeTail* tail;
-};
-
-struct SnakeGame {
-	struct SnakePlayer players[10];
-	uint8_t snakeCount;
-
-	struct SnakeFood* snakeFood[20];
-
-	uint32_t lastTick;
-} snakeGame;
-
-struct SnakeTail {
-	struct SnakeTail* next;
-
-	int16_t x;
-	int16_t y;
-};
-
-struct SnakeFood {
-	int16_t x;
-	int16_t y;
-
-	int32_t expiryTick;
-};
-
-#define SNAKE_DIRECTION_NORTH 0
-#define SNAKE_DIRECTION_EAST  1
-#define SNAKE_DIRECTION_SOUTH 2
-#define SNAKE_DIRECTION_WEST  3
-
-struct SnakeTail* findSnakePlayerTailTail(struct SnakeTail* snakeTail) {
-	if(snakeTail->next == NULL) {
-		return snakeTail;
-	}
-
-	return findSnakePlayerTailTail(snakeTail->next);
-}
-
-struct SnakeTail* createSnakeTail(int16_t x, int16_t y) {
-	struct SnakeTail* snakeTail = malloc(sizeof(struct SnakeTail));
-	snakeTail->x = x;
-	snakeTail->y = y;
-	snakeTail->next = NULL;
-
-	return snakeTail;
-}
-
-void addSnakeTail(struct SnakePlayer* snakePlayer) {
-	struct SnakeTail* newTail = createSnakeTail(snakePlayer->x, snakePlayer->y);
-
-	if(snakePlayer->tail == NULL) {
-		snakePlayer->tail = newTail;
-	} else {
-		struct SnakeTail* snakeTail = findSnakePlayerTailTail(snakePlayer->tail);
-		snakeTail->next = newTail;
-	}
-}
-
-void updateSnakeTailPositions(struct SnakeTail* snakeTail, uint16_t x, uint16_t y) {
-	if(snakeTail == NULL) {
-		return;
-	}
-
-	if(snakeTail->next != NULL) {
-		updateSnakeTailPositions(snakeTail->next, snakeTail->x, snakeTail->y);
-	}
-
-	snakeTail->x = x;
-	snakeTail->y = y;
-}
-
-void deleteSnakeTail(struct SnakeTail* snakeTail) {
-	if(snakeTail == NULL) {
-		return;
-	}
-
-	if(snakeTail->next != NULL) {
-		deleteSnakeTail(snakeTail->next);
-	}
-
-	free(snakeTail);
-	snakeTail->next = NULL;
-}
-
-uint8_t tailContainsCoords(struct SnakeTail* snakeTail, uint16_t x, uint16_t y, uint16_t depth) {
-	if(snakeTail == NULL) {
-		return 0;
-	}
-
-	if((snakeTail->x == x) && (snakeTail->y == y)) {
-		return 1;
-	}
-
-	if(snakeTail->next != NULL) {
-		return tailContainsCoords(snakeTail->next, x, y, depth + 1);
-	}
-
-	return 0;
-}
-
-void initSnakePlayer(struct SnakePlayer* snakePlayer) {
-	snakePlayer->playing = 1;
-	snakePlayer->x = rand() % 24;
-	snakePlayer->y = rand() % 24;
-	snakePlayer->colour = rgbToPixel(20, rand() % 0b11111, rand() % 0b11111, rand() % 0b11111);
-	snakePlayer->location = 0;
-	snakePlayer->direction = 0;
-	snakePlayer->lastMovementTick = 0;
-	snakePlayer->speed = 200;
-
-	snakePlayer->tailSize = 0;
-	snakePlayer->tail = NULL;
-}
-
-void initSnakeFood(struct SnakeFood* snakeFood) {
-	snakeFood->x = rand() % 24;
-	snakeFood->y = rand() % 24;
-
-	snakeFood->expiryTick = HAL_GetTick() + 5000 + (rand() % 3000);
-}
-
-void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness) {
-	uint32_t currentTick = HAL_GetTick();
-
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_START)) {
-		for(int i = 0; i < snakeGame.snakeCount; i++) {
-			deleteSnakeTail(snakeGame.players[i].tail);
-
-			if(snakeGame.snakeFood[i] != NULL) {
-				free(snakeGame.snakeFood[i]);
-				snakeGame.snakeFood[i] = NULL;
-			}
-		}
-
-		snakeGame.snakeCount = 0;
-	}
-
-	if(snakeGame.snakeCount == 0) {
-		initSnakePlayer(&(snakeGame.players[0]));
-		snakeGame.snakeCount++;
-
-		initSnakePlayer(&(snakeGame.players[1]));
-		snakeGame.snakeCount++;
-	}
-
-	for(int i = 0; i < snakeGame.snakeCount; i++) {
-		if((snakeGame.snakeFood[i] == NULL) && (rand() % 10 == 1)) {
-			snakeGame.snakeFood[i] = malloc(sizeof(struct SnakeFood));
-			initSnakeFood(snakeGame.snakeFood[i]);
-		}
-
-		if(currentTick > snakeGame.snakeFood[i]->expiryTick) {
-			free(snakeGame.snakeFood[i]);
-			snakeGame.snakeFood[i] = NULL;
-		}
-	}
-		
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1)) {
-		snakeGame.players[0].direction = SNAKE_DIRECTION_NORTH;
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2)) {
-		snakeGame.players[0].direction = SNAKE_DIRECTION_EAST;
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3)) {
-		snakeGame.players[0].direction = SNAKE_DIRECTION_SOUTH;
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4)) {
-		snakeGame.players[0].direction = SNAKE_DIRECTION_WEST;
-	}
-
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1)) {
-		snakeGame.players[1].direction = SNAKE_DIRECTION_NORTH;
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2)) {
-		snakeGame.players[1].direction = SNAKE_DIRECTION_EAST;
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3)) {
-		snakeGame.players[1].direction = SNAKE_DIRECTION_SOUTH;
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4)) {
-		snakeGame.players[1].direction = SNAKE_DIRECTION_WEST;
-	}
-
-	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
-		if(snakeGame.players[snakeIndex].playing == 0) {
-			continue;
-		}
-
-		if((currentTick - snakeGame.players[snakeIndex].lastMovementTick) > snakeGame.players[snakeIndex].speed) {
-			snakeGame.players[snakeIndex].lastMovementTick = currentTick;
-
-			switch(snakeGame.players[snakeIndex].direction) {
-				case SNAKE_DIRECTION_NORTH:
-					snakeGame.players[snakeIndex].y--;
-					break;
-				case SNAKE_DIRECTION_EAST:
-					snakeGame.players[snakeIndex].x++;
-					break;
-				case SNAKE_DIRECTION_WEST:
-					snakeGame.players[snakeIndex].x--;
-					break;
-				case SNAKE_DIRECTION_SOUTH:
-					snakeGame.players[snakeIndex].y++;
-					break;
-			}
-
-			if(snakeGame.players[snakeIndex].x >= 24) {
-				snakeGame.players[snakeIndex].x %= 24;
-			}
-			if(snakeGame.players[snakeIndex].x < 0) {
-				snakeGame.players[snakeIndex].x = 23;
-			}
-			if(snakeGame.players[snakeIndex].y >= 24) {
-				snakeGame.players[snakeIndex].y %= 24;
-			}
-			if(snakeGame.players[snakeIndex].y < 0) {
-				snakeGame.players[snakeIndex].y = 23;
-			}
-
-			updateSnakeTailPositions(snakeGame.players[snakeIndex].tail, snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y);
-
-			for(int snakeFoodIndex = 0; snakeFoodIndex < snakeGame.snakeCount; snakeFoodIndex++) {
-				if(snakeGame.snakeFood[snakeFoodIndex] != NULL) {
-					struct SnakeFood* snakeFood = snakeGame.snakeFood[snakeFoodIndex];
-					if((snakeFood->x == snakeGame.players[snakeIndex].x) && (snakeFood->y == snakeGame.players[snakeIndex].y)) {
-						free(snakeFood);
-						snakeFood = NULL;
-						snakeGame.snakeFood[snakeFoodIndex] = NULL;
-
-						addSnakeTail(&snakeGame.players[snakeIndex]);
-						snakeGame.players[snakeIndex].speed -= 3;
-					}
-				}
-			}
-		}
-	}
-
-	// check for collisions
-	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
-		for(int opponentSnakeIndex = 0; opponentSnakeIndex < snakeGame.snakeCount; opponentSnakeIndex++) {
-			if(snakeIndex == opponentSnakeIndex) {
-				continue;
-			}
-
-			if(tailContainsCoords(snakeGame.players[opponentSnakeIndex].tail, snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y, 0)) {
-				// GAME OVER
-				snakeGame.players[snakeIndex].playing = 0;
-				return;
-			}
-
-			if((snakeGame.players[snakeIndex].x == snakeGame.players[opponentSnakeIndex].x) && (snakeGame.players[snakeIndex].y == snakeGame.players[opponentSnakeIndex].y)) {
-				// GAME OVER
-				snakeGame.players[snakeIndex].playing = 0;
-				snakeGame.players[opponentSnakeIndex].playing = 0;
-				return;
-			}
-		}
-	}
-	
-
-	// DRAW SNAKE + TAIL
-	for(int snakeIndex = 0; snakeIndex < snakeGame.snakeCount; snakeIndex++) {
-		pixels[xyToLedIndex(snakeGame.players[snakeIndex].x, snakeGame.players[snakeIndex].y)] = snakeGame.players[snakeIndex].colour;
-		struct SnakeTail* snakeTail = snakeGame.players[snakeIndex].tail;
-		while(snakeTail != NULL) {
-			pixels[xyToLedIndex(snakeTail->x, snakeTail->y)] = snakeGame.players[snakeIndex].colour;
-			snakeTail = snakeTail->next;
-		}
-	}
-
-	// DRAW SNAKE FOOD
-	for(int snakeFoodIndex = 0; snakeFoodIndex < snakeGame.snakeCount; snakeFoodIndex++) {
-		if(snakeGame.snakeFood[snakeFoodIndex] != NULL) {
-			pixels[xyToLedIndex(snakeGame.snakeFood[snakeFoodIndex]->x, snakeGame.snakeFood[snakeFoodIndex]->y)] = rgbToPixel(0b111, 0b11111, 0, 0);
-		}
-	}
-}
-
 void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage, float batteryVoltage) {
 	for(int i = 0; i < 16; i++) {
-		pixels[xyToLedIndex(i, 0)] = rgbToPixel(brightness, (buttonState[i] > 256) ? 20 : 0, (buttonState[i] <= 256) ? 20 : 0, 0);
-		pixels[xyToLedIndex(i, 1)] = rgbToPixel(brightness, (buttonAccumulators[i] > 256) ? 20 : 0, (buttonAccumulators[i] <= 256) ? 20 : 0, 0);
-		pixels[xyToLedIndex(i, 2)] = rgbToPixel(brightness, (buttonAccumulators[i] > 128) ? 20 : 0, (buttonAccumulators[i] <= 128) ? 20 : 0, 0);
-		pixels[xyToLedIndex(i, 3)] = rgbToPixel(brightness, (buttonAccumulators[i] > 64) ? 20 : 0, (buttonAccumulators[i] <= 64) ? 20 : 0, 0);
-		pixels[xyToLedIndex(i, 4)] = rgbToPixel(brightness, (buttonAccumulators[i] > 32) ? 20 : 0, (buttonAccumulators[i] <= 32) ? 20 : 0, 0);
-		pixels[xyToLedIndex(i, 5)] = rgbToPixel(brightness, (buttonAccumulators[i] > 16) ? 20 : 0, (buttonAccumulators[i] <= 16) ? 20 : 0, 0);
-		pixels[xyToLedIndex(i, 6)] = rgbToPixel(brightness, (buttonAccumulators[i] > 0) ? 20 : 0, (buttonAccumulators[i] <= 0) ? 20 : 0, 0);
+		setPixel(i, 0, brightness, (buttonState[i] > 256) ? 20 : 0, (buttonState[i] <= 256) ? 20 : 0, 0);
+		setPixel(i, 1, brightness, (buttonAccumulators[i] > 256) ? 20 : 0, (buttonAccumulators[i] <= 256) ? 20 : 0, 0);
+		setPixel(i, 2, brightness, (buttonAccumulators[i] > 128) ? 20 : 0, (buttonAccumulators[i] <= 128) ? 20 : 0, 0);
+		setPixel(i, 3, brightness, (buttonAccumulators[i] > 64) ? 20 : 0, (buttonAccumulators[i] <= 64) ? 20 : 0, 0);
+		setPixel(i, 4, brightness, (buttonAccumulators[i] > 32) ? 20 : 0, (buttonAccumulators[i] <= 32) ? 20 : 0, 0);
+		setPixel(i, 5, brightness, (buttonAccumulators[i] > 16) ? 20 : 0, (buttonAccumulators[i] <= 16) ? 20 : 0, 0);
+		setPixel(i, 6, brightness, (buttonAccumulators[i] > 0) ? 20 : 0, (buttonAccumulators[i] <= 0) ? 20 : 0, 0);
 	}
 
 	//drawText(brightness, 0, 9, "monero", 6);
@@ -1309,13 +839,13 @@ void drawText(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t len
 			for(uint8_t charX = 0; charX < charWidth; charX++) {
 				uint8_t charLine = characters[(charIndex * (CHAR_HEIGHT + 1)) + charY + 1];
 				if((charLine >> (charWidth - charX - 1)) & 1) {
-					pixels[xyToLedIndex(x + charX + xOffset, y + charY)] = rgbToPixel(brightness, 20, 20, 20);
+					setPixel(x + charX + xOffset, y + charY, brightness, 20, 20, 20);
 				} else {
-					pixels[xyToLedIndex(x + charX + xOffset, y + charY)] = rgbToPixel(brightness, 0, 0, 0);
+					setPixel(x + charX + xOffset, y + charY, brightness, 0, 0, 0);
 				}
 			}
 		}
-		pixels[xyToLedIndex(xOffset, 20)] = rgbToPixel(brightness, 20, 20, 20);
+		setPixel(xOffset, 20, brightness, 20, 20, 20);
 		xOffset += charWidth;
 	}
 }
@@ -1697,7 +1227,7 @@ int main(void)
 		} else if(gameMode == MODE_RAIN) {
 			rain(mean_x, mean_y, buttonState, buttonAccumulators);
 		} else if(gameMode == MODE_BLIND) {
-			blind(rgbToPixel(0b111, 0b11111, 0b11111, 0b11111));
+			blind(0b111, 0b11111);
 		} else if(gameMode == MODE_RANDOM) {
 			random_pixels(0b111);
 		} else if(gameMode == MODE_SNAKE) {
