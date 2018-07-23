@@ -8,8 +8,16 @@
 #include <string.h>
 
 struct EyeGame {
-	uint16_t direction;
-	uint16_t dilation;
+	int32_t destinationX;
+	int32_t destinationY;
+
+	int32_t currentX;
+	int32_t currentY;
+
+	int32_t rateX;
+	int32_t rateY;
+
+	uint32_t dilation;
 };
 
 void eye(uint32_t brightness);

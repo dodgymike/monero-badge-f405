@@ -810,15 +810,17 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	char batteryAdcValueText[4];
 	sprintf(batteryAdcValueText, "%.4lu", batteryAdcAverage);
 	drawText(brightness, 0, 9, batteryAdcValueText, 4);
-	CDC_Transmit_FS(batteryAdcValueText, strlen(batteryAdcValueText));
-	CDC_Transmit_FS("\n", 1);
 
 
 	char batteryVoltageText[10];
 	sprintf(batteryVoltageText, "%2.2f", batteryVoltage);
 	drawText(brightness, 0, 15, batteryVoltageText, 5);
+/*
+	CDC_Transmit_FS(batteryAdcValueText, strlen(batteryAdcValueText));
+	CDC_Transmit_FS("\n", 1);
 	CDC_Transmit_FS(batteryVoltageText, strlen(batteryVoltageText));
 	CDC_Transmit_FS("\n", 1);
+*/
 }
 
 void drawText(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t length) {
@@ -1238,7 +1240,7 @@ int main(void)
 		} else if(gameMode == MODE_SNAKE) {
 			snake(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick);
 		} else if(gameMode == MODE_EYE) {
-			eye(0b111);
+			eye(0b1111);
 		} else if(gameMode == MODE_DEBUG) {
 			debug(buttonState, buttonAccumulators, 0b111, batteryAdcAverage, batteryVoltage);
 		}
