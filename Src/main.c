@@ -359,12 +359,14 @@ static uint8_t characters[37 * 6] = {
 #define MODE_DEBUG    0b0000000000010000
 
 
-uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button) {
+uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button, uint32_t* lastButtonPressTick) {
 	uint8_t buttonPressed = 0;
 
 	if((buttonState[button] < 256) && (buttonAccumulators[button] > 256)) {
 		buttonPressed = 1;
 		buttonState[button] = 512;
+
+		*lastButtonPressTick = HAL_GetTick();
 	} else if(buttonAccumulators[button] < 256) {
 		buttonState[button] = 0;
 	}
@@ -701,43 +703,43 @@ uint32_t rainRed = 0b11111;
 uint32_t rainGreen = 0b11111;
 uint32_t rainBlue = 0b11111;
 
-void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulators[16]) {
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1)) {
+void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t* lastButtonPressTick) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1, lastButtonPressTick)) {
 		if(rainBrightness > 0) {
 			rainBrightness--;
 		}
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3, lastButtonPressTick)) {
 		if(rainBrightness < 0b00011111) {
 			rainBrightness++;
 		}
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4, lastButtonPressTick)) {
 		if(rainRed > 0) {
 			rainRed--;
 		}
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2, lastButtonPressTick)) {
 		if(rainRed < 254) {
 			rainRed++;
 		}
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4, lastButtonPressTick)) {
 		if(rainGreen > 0) {
 			rainGreen--;
 		}
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2, lastButtonPressTick)) {
 		if(rainGreen < 254) {
 			rainGreen++;
 		}
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1, lastButtonPressTick)) {
 		if(rainBlue > 0) {
 			rainBlue--;
 		}
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3, &lastButtonPressTick)) {
 		if(rainBlue < 254) {
 			rainBlue++;
 		}
@@ -909,21 +911,6 @@ void disablePower() {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
 }
 
-void enableLedPanel(uint8_t *ledPanelEnabled) {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-	*ledPanelEnabled = 1;
-}
-
-void disableLedPanel(uint8_t *ledPanelEnabled) {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-
-	ClearPixels();
-	WriteLedPanelFrame();
-
-	*ledPanelEnabled = 0;
-}
-
-
 /* USER CODE END 0 */
 
 /**
@@ -1058,6 +1045,7 @@ int main(void)
 
 	uint32_t buttonAccumulators[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 	uint32_t buttonState[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+	uint32_t lastButtonPressTick = HAL_GetTick();
 
 	uint16_t gameMode = MODE_DEBUG;
 
@@ -1160,6 +1148,14 @@ int main(void)
 	//sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
 	//serialSend(accDebugString);
 
+	if(HAL_GetTick() - lastButtonPressTick > 2000) {
+		disableLedPanel(&ledPanelEnabled);
+	} else {
+		enableLedPanel(&ledPanelEnabled);
+	}
+/*
+*/
+
 	if(HAL_GetTick() - last_tick > 50) {
 		last_tick = HAL_GetTick();
 		ClearPixels();
@@ -1181,23 +1177,28 @@ int main(void)
 		if(batteryAdcTotalSampleCount > (batteryAdcValuesSize * 20)) { // wait for ADC low-pass to have enough samples during start-up
 			if(batteryVoltage <= 6.6) {
 				// SHUTDOWN TIME!
+				// NO FURTHER PROCESSING
 				disableLedPanel(&ledPanelEnabled);
 				disablePower();
+				while(1) {}
+				// NO FURTHER PROCESSING
+				// NO FURTHER PROCESSING
 			} else if(batteryVoltage < 6.9) {
 				// LOW POWER TIME!
 				lowBattery = 1;
-			} else if(batteryVoltage > 7.5) {
+			}
+/*
+			 else if(batteryVoltage > 7.5) {
 				lowBattery = 0;
 				enablePower();
 				enableLedPanel(&ledPanelEnabled);
 			}
-		} 
-/*
 */
+		} 
 
 
-		uint8_t selectPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT);
-		uint8_t startPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_START);
+		uint8_t selectPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT, &lastButtonPressTick);
+		uint8_t startPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_START, &lastButtonPressTick);
 
 		if(selectPressed && startPressed) {
         		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
@@ -1225,20 +1226,18 @@ int main(void)
 		if(lowBattery) {
 			lowBatteryScreen(0b111, &lowBatteryFlashCounter);
 		} else if(gameMode == MODE_RAIN) {
-			rain(mean_x, mean_y, buttonState, buttonAccumulators);
+			rain(mean_x, mean_y, buttonState, buttonAccumulators, &lastButtonPressTick);
 		} else if(gameMode == MODE_BLIND) {
 			blind(0b111, 0b11111);
 		} else if(gameMode == MODE_RANDOM) {
 			random_pixels(0b111);
 		} else if(gameMode == MODE_SNAKE) {
-			snake(buttonState, buttonAccumulators, 0b111);
+			snake(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick);
 		} else if(gameMode == MODE_DEBUG) {
 			debug(buttonState, buttonAccumulators, 0b111, batteryAdcAverage, batteryVoltage);
 		}
 
-		if(ledPanelEnabled) {
-			WriteLedPanelFrame();
-		}
+		WriteLedPanelFrame(ledPanelEnabled);
 	}
 
 	if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) {

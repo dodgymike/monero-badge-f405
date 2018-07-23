@@ -17,7 +17,7 @@ void setPixel(uint8_t x, uint8_t y, uint32_t brightness, uint32_t red, uint32_t 
 
 uint32_t rgbToPixel(uint32_t brightness, uint32_t red, uint32_t green, uint32_t blue);
 void ClearPixels();
-void WriteLedPanelFrame();
+void WriteLedPanelFrame(uint8_t ledPanelEnabled);
 uint16_t xyToLedIndex(uint8_t x, uint8_t y);
 
 extern SPI_HandleTypeDef hspi2;

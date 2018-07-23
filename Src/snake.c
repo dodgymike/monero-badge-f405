@@ -96,10 +96,10 @@ void initSnakeFood(struct SnakeFood* snakeFood) {
 	snakeFood->expiryTick = HAL_GetTick() + 5000 + (rand() % 3000);
 }
 
-void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness) {
+void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick) {
 	uint32_t currentTick = HAL_GetTick();
 
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_START)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_START, lastButtonPressTick)) {
 		for(int i = 0; i < snakeGame.snakeCount; i++) {
 			deleteSnakeTail(snakeGame.players[i].tail);
 
@@ -132,29 +132,29 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 		}
 	}
 		
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1, lastButtonPressTick)) {
 		snakeGame.players[0].direction = SNAKE_DIRECTION_NORTH;
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2, lastButtonPressTick)) {
 		snakeGame.players[0].direction = SNAKE_DIRECTION_EAST;
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3, lastButtonPressTick)) {
 		snakeGame.players[0].direction = SNAKE_DIRECTION_SOUTH;
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4, lastButtonPressTick)) {
 		snakeGame.players[0].direction = SNAKE_DIRECTION_WEST;
 	}
 
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1, lastButtonPressTick)) {
 		snakeGame.players[1].direction = SNAKE_DIRECTION_NORTH;
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2, lastButtonPressTick)) {
 		snakeGame.players[1].direction = SNAKE_DIRECTION_EAST;
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3, lastButtonPressTick)) {
 		snakeGame.players[1].direction = SNAKE_DIRECTION_SOUTH;
 	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4)) {
+	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4, lastButtonPressTick)) {
 		snakeGame.players[1].direction = SNAKE_DIRECTION_WEST;
 	}
 

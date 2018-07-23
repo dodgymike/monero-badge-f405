@@ -12,4 +12,6 @@
 #define BUTTON_L2     ((uint16_t) 13)
 #define BUTTON_L1     ((uint16_t) 14)
 
+uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button, uint32_t* lastButtonPressTick);
+
 #endif

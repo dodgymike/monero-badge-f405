@@ -47,8 +47,11 @@ void ClearPixels()
 	}
 }
 
-void WriteLedPanelFrame()
+void WriteLedPanelFrame(uint8_t ledPanelEnabled)
 {
+	if(!ledPanelEnabled) {
+		return;
+	}
 
 	uint8_t led_frame_size = 4;
 	uint8_t offBrightness = 0b11110000;
@@ -141,5 +144,35 @@ uint16_t xyToLedIndex(uint8_t x, uint8_t y) {
 	}
 
 	return ledIndex;
+}
+
+void enableLedPanel(uint8_t *ledPanelEnabled) {
+/*
+*/
+	if(*ledPanelEnabled) {
+		return;
+	}
+
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+
+//        ClearPixels();
+//        WriteLedPanelFrame(1);
+
+        *ledPanelEnabled = 1; 
+}
+
+void disableLedPanel(uint8_t *ledPanelEnabled) {
+/*
+*/
+	if(!*ledPanelEnabled) {
+		return;
+	}
+
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+
+        ClearPixels();
+        WriteLedPanelFrame(1);
+
+        *ledPanelEnabled = 0; 
 }
 
