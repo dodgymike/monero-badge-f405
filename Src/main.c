@@ -677,14 +677,14 @@ void blind(uint32_t brightness, uint32_t whiteLevel) {
 void lowBatteryScreen(uint32_t brightness, uint32_t* batteryFlashCounter) {
 	if((*batteryFlashCounter)++ % 50 > 25) {
 		for(int y = 9; y < 9 + 6; y++) {
-			setPixel(10, y, brightness, 0, 0, 1);
-			setPixel(13, y, brightness, 0, 0, 1);
+			setPixel(10, y, brightness, 0b1111, 0, 0);
+			setPixel(13, y, brightness, 0b1111, 0, 0);
 		}
 		
 		for(int x = 11; x <= 12; x++) {
-			setPixel(x, 8, brightness, 0, 0, 1);
-			setPixel(x, 9, brightness, 0, 0, 1);
-			setPixel(x, 14, brightness, 0, 0, 1);
+			setPixel(x, 8, brightness, 0b1111, 0, 0);
+			setPixel(x, 9, brightness, 0b1111, 0, 0);
+			setPixel(x, 14, brightness, 0b1111, 0, 0);
 		}
 	}
 }
@@ -814,9 +814,9 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	//uint8_t batteryVoltageMajor = batteryVoltage100/100;
 	//uint8_t batteryVoltageMinor = (batteryVoltage100 - (batteryVoltageMajor * 100));
 	char batteryVoltageText[10];
-	sprintf(batteryVoltageText, "%d", batteryVoltage100);
+	sprintf(batteryVoltageText, "%.3d", batteryVoltage100);
 
-	drawText(brightness, 0, 15, batteryVoltageText, 5);
+	drawText(brightness, 0, 15, batteryVoltageText, 3);
 /*
 	CDC_Transmit_FS(batteryAdcValueText, strlen(batteryAdcValueText));
 	CDC_Transmit_FS("\n", 1);
@@ -1180,7 +1180,7 @@ int main(void)
 		batteryVoltage100 = 2.33 * (batteryAdcAverage / 10);
 
 		if(batteryAdcTotalSampleCount > (batteryAdcValuesSize * 20)) { // wait for ADC low-pass to have enough samples during start-up
-			if(batteryVoltage100 <= 610) {
+			if(batteryVoltage100 <= 620) {
 				// SHUTDOWN TIME!
 				// NO FURTHER PROCESSING
 				disableLedPanel(&ledPanelEnabled);
@@ -1188,7 +1188,7 @@ int main(void)
 				while(1) {}
 				// NO FURTHER PROCESSING
 				// NO FURTHER PROCESSING
-			} else if(batteryVoltage100 < 650) {
+			} else if(batteryVoltage100 < 630) {
 				// LOW POWER TIME!
 				lowBattery = 1;
 			}
