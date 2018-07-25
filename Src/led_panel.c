@@ -28,7 +28,7 @@ static uint8_t end_frame_data[] = {
 
 
 void setPixelColour(uint8_t x, uint8_t y, uint32_t brightness, uint32_t colour) {
-	pixels[xyToLedIndex(x, y)] = colour;
+	pixels[xyToLedIndex(x, y)] = (((brightness) | 0b11100000) << 24) + colour;
 }
 
 void setPixel(uint8_t x, uint8_t y, uint32_t brightness, uint32_t red, uint32_t green, uint32_t blue) {

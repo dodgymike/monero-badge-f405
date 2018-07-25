@@ -84,6 +84,7 @@ Src/usbd_cdc_if.c \
 Src/usb_device.c \
 Src/snake.c \
 Src/eye.c \
+Src/welcome.c \
 Src/led_panel.c \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c
 

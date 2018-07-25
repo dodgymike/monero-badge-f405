@@ -358,6 +358,7 @@ static uint8_t characters[37 * 6] = {
 #define MODE_RANDOM   0b0000000000001000
 #define MODE_DEBUG    0b0000000000010000
 #define MODE_EYE      0b0000000000100000
+#define MODE_WELCOME  0b0000000001000000
 
 
 uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button, uint32_t* lastButtonPressTick) {
@@ -1052,7 +1053,7 @@ int main(void)
 	uint32_t buttonState[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 	uint32_t lastButtonPressTick = HAL_GetTick();
 
-	uint16_t gameMode = MODE_DEBUG;
+	uint16_t gameMode = MODE_WELCOME;
 
 	uint32_t last_tick = HAL_GetTick();
 	uint32_t buttonTicks = 0;
@@ -1210,6 +1211,9 @@ int main(void)
         		disablePower();
 		} else if(selectPressed) {
 			switch(gameMode) {
+				case MODE_WELCOME:
+					gameMode = MODE_RAIN;
+					break;
 				case MODE_RAIN:
 					gameMode = MODE_SNAKE;
 					break;
@@ -1226,13 +1230,15 @@ int main(void)
 					gameMode = MODE_RANDOM;
 					break;
 				case MODE_RANDOM:
-					gameMode = MODE_RAIN;
+					gameMode = MODE_WELCOME;
 					break;
 			}
 		}
 
 		if(lowBattery) {
 			lowBatteryScreen(0b111, &lowBatteryFlashCounter);
+		} else if(gameMode == MODE_WELCOME) {
+			welcome(0b11111);
 		} else if(gameMode == MODE_RAIN) {
 			rain(mean_x, mean_y, buttonState, buttonAccumulators, &lastButtonPressTick);
 		} else if(gameMode == MODE_BLIND) {
