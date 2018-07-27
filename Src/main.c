@@ -1016,12 +1016,10 @@ int main(void)
 	}
 */
 
-	// IR TX
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
-
 	HAL_ADC_Start(&hadc1);
+
+	uint8_t IRHello[] = "bobmonkey";
+	irTX(IRHello, strlen(IRHello));
 
   serialSend("Initialising MPU6000: ");
 
@@ -1165,6 +1163,8 @@ int main(void)
 	if(HAL_GetTick() - last_tick > 50) {
 		last_tick = HAL_GetTick();
 		ClearPixels();
+
+		irTX(IRHello, strlen(IRHello));
 
 		uint32_t batteryAdcAccumulator = 0;
 		//for(uint32_t i = 0; i < batteryAdcValuesSize; i++) {
