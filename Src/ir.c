@@ -19,21 +19,28 @@ void irTX(uint8_t data[], uint8_t dataSize) {
 
 	HAL_Delay(1);
 
+	uint8_t frameTime = 26;
+	uint8_t pulseTimeZero = 8;
+	uint8_t frameRemainderTimeZero = frameTime - pulseTimeZero;
+	uint8_t pulseTimeOne = 16;
+	uint8_t frameRemainderTimeOne = frameTime - pulseTimeOne;
+
 	for(uint8_t dataIndex = 0; dataIndex < dataSize; dataIndex++) {
 		for(uint8_t dataBit = 0; dataBit < 8; dataBit++) {
+			uint8_t onTime = ((data[dataIndex] >> dataBit) & 0x01) ? pulseTimeOne : pulseTimeZero;
+			uint8_t offTime = ((data[dataIndex] >> dataBit) & 0x01) ? frameRemainderTimeOne : frameRemainderTimeZero;
+
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
 
-			if((data[dataIndex] >> dataBit) & 0x01) {
-				delayUS_ASM(5);
-			} else {
-				delayUS_ASM(10);
-			}
+			delayUS_ASM(onTime);
 
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+
+			delayUS_ASM(offTime);
 		}
 	}
 
