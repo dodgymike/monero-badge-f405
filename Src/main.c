@@ -1152,12 +1152,12 @@ int main(void)
 	//sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
 	//serialSend(accDebugString);
 
-/*
-	if(HAL_GetTick() - lastButtonPressTick > 60000) {
+	if(HAL_GetTick() - lastButtonPressTick > 600000) {
 		disableLedPanel(&ledPanelEnabled);
 	} else {
 		enableLedPanel(&ledPanelEnabled);
 	}
+/*
 */
 
 	if(HAL_GetTick() - last_tick > 50) {
@@ -1184,9 +1184,11 @@ int main(void)
 			if(batteryVoltage100 <= 620) {
 				// SHUTDOWN TIME!
 				// NO FURTHER PROCESSING
+/*
 				disableLedPanel(&ledPanelEnabled);
 				disablePower();
 				while(1) {}
+*/
 				// NO FURTHER PROCESSING
 				// NO FURTHER PROCESSING
 			} else if(batteryVoltage100 < 630) {
