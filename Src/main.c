@@ -795,6 +795,14 @@ void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulat
 	// /DEBUG
 }
 
+void binToHex(uint8_t in[], uint8_t out[], uint8_t byteCount) {
+	out[0] = 0;
+
+	for(int i = 0; i < byteCount; i++) {
+		sprintf(out + (i * 3), "%.3d", in[i]);
+	}
+}
+
 void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage, uint32_t batteryVoltage100) {
 	for(int i = 0; i < 16; i++) {
 		setPixel(i, 0, brightness, (buttonState[i] > 256) ? 20 : 0, (buttonState[i] <= 256) ? 20 : 0, 0);
@@ -818,11 +826,26 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	sprintf(batteryVoltageText, "%.3d", batteryVoltage100);
 
 	drawText(brightness, 0, 15, batteryVoltageText, 3);
+
+	uint8_t irData[100];
+	uint8_t receivedDataCount = irRX(irData, 100);
+
+	uint8_t hexOut[30];
+	binToHex(irData, hexOut, receivedDataCount);
+
+	uint8_t irDebugText[100];
+	sprintf(irDebugText, "Received (%d) bytes hex (%s)\r\n", receivedDataCount, hexOut);
+	uint8_t irDisplayText[10];
+	sprintf(irDisplayText, "%.2d", receivedDataCount);
+
+	drawText(brightness, 13, 15, irDisplayText, 2);
+	
+	CDC_Transmit_FS(irDebugText, strlen(irDebugText));
 /*
 	CDC_Transmit_FS(batteryAdcValueText, strlen(batteryAdcValueText));
-	CDC_Transmit_FS("\n", 1);
+	CDC_Transmit_FS("\r\n", 2);
 	CDC_Transmit_FS(batteryVoltageText, strlen(batteryVoltageText));
-	CDC_Transmit_FS("\n", 1);
+	CDC_Transmit_FS("\r\n", 2);
 */
 }
 
@@ -1470,7 +1493,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB0 PB11 PB7 */
@@ -1483,20 +1506,21 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PC10 */
   GPIO_InitStruct.Pin = GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PC11 */
   GPIO_InitStruct.Pin = GPIO_PIN_11;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 }
