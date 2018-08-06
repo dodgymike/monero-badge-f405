@@ -1,7 +1,8 @@
 from PIL import Image
 
 #im = Image.open('mm-24.gif')
-im = Image.open('defcon-smiley.gif')
+#im = Image.open('defcon-smiley.gif')
+im = Image.open('TongueCheek.bmp')
 rgb_im = im.convert('RGB')
 
 print "{"

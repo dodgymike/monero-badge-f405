@@ -8,7 +8,7 @@
 			"1: \n\t"\
 			"SUB R0, #1\n\t"\
 			"CMP R0, #0\n\t"\
-			"BNE 1b \n\t" : : [loops] "r" (16*us) : "memory"\
+			"BNE 1b \n\t" : : [loops] "r" (32*us) : "memory"\
 		      );\
 } while(0)
 
@@ -18,13 +18,20 @@ uint8_t pulseTimeOne = 16;
 uint8_t pulseUnitTime = 4;
 
 void irTX(uint8_t data[], uint8_t dataSize) {
+	irTXWithDelay(data, dataSize, 13);
+}
+
+void irTXWithDelay(uint8_t data[], uint8_t dataSize, uint8_t delay) {
 	uint8_t frameRemainderTimeOne = frameTime - pulseTimeOne;
 	uint8_t frameRemainderTimeZero = frameTime - pulseTimeZero;
 
+/*
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+*/
 
+/*
 	delayUS_ASM(frameTime);
 
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
@@ -36,29 +43,70 @@ void irTX(uint8_t data[], uint8_t dataSize) {
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+*/
 
+/*
 	for(uint8_t dataIndex = 0; dataIndex < dataSize; dataIndex++) {
 		for(uint8_t dataBit = 0; dataBit < 8; dataBit++) {
-			uint8_t onTime = ((data[dataIndex] >> dataBit) & 0x01) ? pulseTimeOne : pulseTimeZero;
-			uint8_t offTime = ((data[dataIndex] >> dataBit) & 0x01) ? frameRemainderTimeOne : frameRemainderTimeZero;
+			for(uint8_t pulseCount = 0; pulseCount < 30; pulseCount++) {
+				if(((data[dataIndex] >> dataBit) & 0x01) && (pulseCount < 20)) {
+					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+				} else if(pulseCount < 10) {
+					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+				} else {
+					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+				}
 
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+				delayUS_ASM(delay);
 
-			delayUS_ASM(onTime);
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
 
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+				delayUS_ASM(delay);
+			}
 
-			delayUS_ASM(offTime);
+			for(uint8_t pulseCount = 0; pulseCount < 12; pulseCount++) {
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+
+				delayUS_ASM(delay);
+			}
 		}
 	}
 
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+*/
+	for(uint8_t pulseCount = 0; pulseCount < 30; pulseCount++) {
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+
+		delayUS_ASM(delay/2);
+
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+
+		delayUS_ASM(delay/2);
+	}
+
+	for(uint8_t pulseCount = 0; pulseCount < 12; pulseCount++) {
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+
+		delayUS_ASM(delay);
+	}
 }
 
 uint8_t irRX(uint8_t data[], uint8_t dataSize, uint32_t timeout) {
@@ -98,6 +146,8 @@ uint8_t irRX(uint8_t data[], uint8_t dataSize, uint32_t timeout) {
 			sprintf(irBitText, "irBit (%.2d)\r\n", irBit);
 			CDC_Transmit_FS(irBitText, strlen(irBitText));
 */
+
+			continue;
 
 			if(!gotStart) {
 				if(irBit > 0) {

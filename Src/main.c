@@ -803,6 +803,8 @@ void binToHex(uint8_t in[], uint8_t out[], uint8_t byteCount) {
 	}
 }
 
+uint32_t irDelayDebug = 0;
+uint8_t irDelay = 26;
 void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage, uint32_t batteryVoltage100) {
 	for(int i = 0; i < 16; i++) {
 		setPixel(i, 0, brightness, (buttonState[i] > 256) ? 20 : 0, (buttonState[i] <= 256) ? 20 : 0, 0);
@@ -816,17 +818,35 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 
 	//drawText(brightness, 0, 9, "monero", 6);
 
+	if(irDelayDebug++ % 30 > 1) {
+		//irTXWithDelay("hello\r\n", 7, irDelayDebug % 100);
+	}
+
 	char batteryAdcValueText[4];
 	sprintf(batteryAdcValueText, "%.4lu", batteryAdcAverage);
-	drawText(brightness, 0, 9, batteryAdcValueText, 4);
+	drawText(brightness, 0, 7, batteryAdcValueText, 4);
 
 	//uint8_t batteryVoltageMajor = batteryVoltage100/100;
 	//uint8_t batteryVoltageMinor = (batteryVoltage100 - (batteryVoltageMajor * 100));
 	char batteryVoltageText[10];
 	sprintf(batteryVoltageText, "%.3d", batteryVoltage100);
 
-	drawText(brightness, 0, 15, batteryVoltageText, 3);
+	drawText(brightness, 0, 13, batteryVoltageText, 3);
 
+	uint32_t lastButtonPressTick = 0;
+	uint8_t upPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_L1, &lastButtonPressTick);
+	uint8_t downPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_L3, &lastButtonPressTick);
+
+	if(upPressed) {
+		irDelay++;
+	}
+	if(downPressed) {
+		irDelay--;
+	}
+
+	char irDelayText[4];
+	sprintf(irDelayText, "%.4d", irDelay);
+	drawText(brightness, 0, 19, irDelayText, 4);
 	uint8_t irData[100];
 	uint8_t receivedDataCount = irRX(irData, 100);
 
@@ -838,9 +858,9 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	uint8_t irDisplayText[10];
 	sprintf(irDisplayText, "%.2d", receivedDataCount);
 
-	drawText(brightness, 13, 15, irDisplayText, 2);
+	//drawText(brightness, 13, 15, irDisplayText, 2);
 	
-	CDC_Transmit_FS(irDebugText, strlen(irDebugText));
+	//CDC_Transmit_FS(irDebugText, strlen(irDebugText));
 /*
 	CDC_Transmit_FS(batteryAdcValueText, strlen(batteryAdcValueText));
 	CDC_Transmit_FS("\r\n", 2);
@@ -876,7 +896,7 @@ void drawText(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t len
 				}
 			}
 		}
-		setPixel(xOffset, 20, brightness, 20, 20, 20);
+		//setPixel(xOffset, 20, brightness, 20, 20, 20);
 		xOffset += charWidth;
 	}
 }
@@ -1187,8 +1207,6 @@ int main(void)
 		last_tick = HAL_GetTick();
 		ClearPixels();
 
-		irTX(IRHello, strlen(IRHello));
-
 		uint32_t batteryAdcAccumulator = 0;
 		//for(uint32_t i = 0; i < batteryAdcValuesSize; i++) {
 		for(uint32_t adcValueIndex = 0; adcValueIndex < batteryAdcValuesSize; adcValueIndex++) {
@@ -1201,7 +1219,7 @@ int main(void)
 		if(batteryAdcAverage > 4096) {
 			batteryAdcAverage = 4096;
 		} 
-		batteryVoltage100 = 2.33 * (batteryAdcAverage / 10);
+		batteryVoltage100 = 2.7 * (batteryAdcAverage / 10);
 
 		if(batteryAdcTotalSampleCount > (batteryAdcValuesSize * 20)) { // wait for ADC low-pass to have enough samples during start-up
 			if(batteryVoltage100 <= 620) {

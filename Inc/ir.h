@@ -11,6 +11,7 @@
 
 
 void irTX(uint8_t data[], uint8_t dataSize);
+void irTXWithDelay(uint8_t data[], uint8_t dataSize, uint8_t delay);
 uint8_t irRX(uint8_t data[], uint8_t dataSize, uint32_t timeout);
 
 #endif
