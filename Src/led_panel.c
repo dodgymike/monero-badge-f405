@@ -168,7 +168,7 @@ void disableLedPanel(uint8_t *ledPanelEnabled) {
 		return;
 	}
 
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+        //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
 
         ClearPixels();
         WriteLedPanelFrame(1);

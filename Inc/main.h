@@ -58,6 +58,11 @@
 
 /* Private define ------------------------------------------------------------*/
 
+#define BATT_BUCK_ENABLE_Pin GPIO_PIN_1
+#define BATT_BUCK_ENABLE_GPIO_Port GPIOA
+#define LED_POWER_ENABLE_Pin GPIO_PIN_15
+#define LED_POWER_ENABLE_GPIO_Port GPIOA
+
 /* ########################## Assert Selection ############################## */
 /**
   * @brief Uncomment the line below to expanse the "assert_param" macro in the 
