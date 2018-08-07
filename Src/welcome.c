@@ -13,6 +13,42 @@ uint32_t htpFrameCounter = 0;
 
 uint32_t* htpFrames[18];
 
+#define KONAMI_CODE_SIZE 10
+
+uint8_t konamiCodeReference[] = {
+	BUTTON_L1,
+	BUTTON_L1,
+	BUTTON_L3,
+	BUTTON_L3,
+	BUTTON_L4,
+	BUTTON_L2,
+	BUTTON_L4,
+	BUTTON_L2,
+	BUTTON_R2,
+	BUTTON_R3
+};
+
+uint8_t konamiCodes[KONAMI_CODE_SIZE];
+uint8_t konamiIndex = 0;
+
+void addKonamiCodeButtonEntry(uint32_t button) {
+	for(int i = KONAMI_CODE_SIZE - 1; i > 0; i--) {
+		konamiCodes[i] = konamiCodes[i - 1];
+	}
+
+	konamiCodes[0] = button;
+}
+
+uint8_t compareKonamiCodes() {
+	for(int i = 0; i < KONAMI_CODE_SIZE; i++) {
+		if(konamiCodes[i] != konamiCodeReference[KONAMI_CODE_SIZE - i - 1]) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 //uint8_t iconIndex = BUTTON_SELECT;
 void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick) {
 
@@ -45,54 +81,67 @@ void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT, &lastButtonPressTick)) {
 		icon = mm_24;
 		animated = 0;
+
         }
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1, &lastButtonPressTick)) {
 		icon = LUSmile;
 		animated = 0;
+
+		addKonamiCodeButtonEntry(BUTTON_L1);
         }
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2, &lastButtonPressTick)) {
 		icon = LDSad;
 		animated = 0;
+
+		addKonamiCodeButtonEntry(BUTTON_L2);
         }
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3, &lastButtonPressTick)) {
 		icon = LLAngry;
 		animated = 0;
+
+		addKonamiCodeButtonEntry(BUTTON_L3);
         }
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4, &lastButtonPressTick)) {
 		icon = LRCrying;
 		animated = 0;
+
+		addKonamiCodeButtonEntry(BUTTON_L4);
         }
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1, &lastButtonPressTick)) {
 		animated = 0;
-		switch(logoState % 3) {
+		switch(logoState % 2) {
 			case 0:
 				icon = RUDefcon;
 				break;
 			case 1:
-				icon = NULL;
-				animated = 1;
-				break;
-			case 2:
 			default:
 				icon = mm_24;
 				break;
 		}
 		logoState++;
+
+		addKonamiCodeButtonEntry(BUTTON_R1);
         }
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2, &lastButtonPressTick)) {
 		icon = RRTongue;
 		animated = 0;
+
+		addKonamiCodeButtonEntry(BUTTON_R2);
         }
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3, &lastButtonPressTick)) {
 		icon = RLLaugh;
 		animated = 0;
+
+		addKonamiCodeButtonEntry(BUTTON_R3);
         }
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4, &lastButtonPressTick)) {
 		icon = RDDrunk;
 		animated = 0;
+
+		addKonamiCodeButtonEntry(BUTTON_R4);
         }
 
-	if(animated) {
+	if(compareKonamiCodes()) {
 		if(htpFrameCounter++ % 4 == 0) {
 			icon = htpFrames[htpFrameIndex++];
 			if(htpFrameIndex >= 18) {
