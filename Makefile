@@ -83,6 +83,7 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c \
 Src/usbd_cdc_if.c \
 Src/usb_device.c \
 Src/snake.c \
+Src/blockchain.c \
 Src/ir.c \
 Src/eye.c \
 Src/welcome.c \

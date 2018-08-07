@@ -358,14 +358,14 @@ static uint8_t characters[37 * 6] = {
 	0b0000,
 };
 
-#define MODE_RAIN     0b0000000000000001
-#define MODE_SNAKE    0b0000000000000010
-#define MODE_BLIND    0b0000000000000100
-#define MODE_RANDOM   0b0000000000001000
-#define MODE_DEBUG    0b0000000000010000
-#define MODE_EYE      0b0000000000100000
-#define MODE_WELCOME  0b0000000001000000
-
+#define MODE_RAIN        0b0000000000000001
+#define MODE_SNAKE       0b0000000000000010
+#define MODE_BLIND       0b0000000000000100
+#define MODE_RANDOM      0b0000000000001000
+#define MODE_DEBUG       0b0000000000010000
+#define MODE_EYE         0b0000000000100000
+#define MODE_WELCOME     0b0000000001000000
+#define MODE_BLOCKCHAIN  0b0000000010000000
 
 uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button, uint32_t* lastButtonPressTick) {
 	uint8_t buttonPressed = 0;
@@ -1269,6 +1269,9 @@ int main(void)
 					gameMode = MODE_SNAKE;
 					break;
 				case MODE_SNAKE:
+					gameMode = MODE_BLOCKCHAIN;
+					break;
+				case MODE_BLOCKCHAIN:
 					gameMode = MODE_EYE;
 					break;
 				case MODE_EYE:
@@ -1297,6 +1300,8 @@ int main(void)
 			blind(0b111, 0b11111);
 		} else if(gameMode == MODE_RANDOM) {
 			random_pixels(0b111);
+		} else if(gameMode == MODE_BLOCKCHAIN) {
+			blockchain(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick);
 		} else if(gameMode == MODE_SNAKE) {
 			snake(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick);
 		} else if(gameMode == MODE_EYE) {
