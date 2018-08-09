@@ -26,6 +26,8 @@ struct Blockchain {
 };
 
 struct BlockchainGame {
+	uint32_t score;
+	uint8_t gameOver;
 	uint32_t blocks[24*24];
 	struct Blockchain currentBlockchain;
 	struct Blockchain nextBlockchain;

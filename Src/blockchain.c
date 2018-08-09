@@ -15,7 +15,7 @@ uint32_t blockColours[] = {
 
 void initBlockchain(struct Blockchain* blockchain) {
 	blockchain->lastMoveTickTime = HAL_GetTick();
-	blockchain->x = 12;
+	blockchain->x = 6;
 	blockchain->y = 0;
 
 	blockchain->tickCount = 0;
@@ -73,6 +73,9 @@ void initBlockchainGame(struct BlockchainGame* blockchainGame) {
 		}
 	}
 
+	blockchainGame->gameOver = 0;
+	blockchainGame->score = 0;
+
 	initBlockchain(&(blockchainGame->currentBlockchain));
 }
 
@@ -80,6 +83,7 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 	uint32_t currentTick = HAL_GetTick();
 
 	uint8_t roundCount = 1;
+	uint8_t bottomRow = 23;
 
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_START, lastButtonPressTick)) {
 	}
@@ -92,8 +96,8 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 	}
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2, lastButtonPressTick)) {
 		(blockchainGame->currentBlockchain.x)++;
-		if(blockchainGame->currentBlockchain.x >= 24) {
-			blockchainGame->currentBlockchain.x = 23;
+		if(blockchainGame->currentBlockchain.x >= 12) {
+			blockchainGame->currentBlockchain.x = 11;
 		}
 	}
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3, lastButtonPressTick)) {
@@ -127,7 +131,7 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 				y++;
 				
 				if(
-					(y >= 24)
+					(y >= bottomRow)
 					|| (blockchainGame->blocks[xyToLedIndex(x,y)] != 0)
 				) {
 					for(int blockIndex = 0; blockIndex < blockchainGame->currentBlockchain.blockCount; blockIndex++) {
@@ -144,9 +148,31 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 				}
 			}
 		}
+
+		uint32_t totalContiguousBlockCount = 0;
+		for(int y = (bottomRow - 1); y >= 0; y--) {
+			uint8_t contiguousBlockCount = 0;
+			for(int x = 0; x < bottomRow; x++) {
+				if(blockchainGame->blocks[xyToLedIndex(x, y)] > 0) {
+					contiguousBlockCount++;
+				}
+			}
+
+			if(contiguousBlockCount == 12) {
+				totalContiguousBlockCount++;
+				for(int copyY = y; copyY > 0; copyY--) {
+					for(int x = 0; x < bottomRow; x++) {
+						blockchainGame->blocks[xyToLedIndex(x, copyY)] = blockchainGame->blocks[xyToLedIndex(x, copyY-1)];
+					}
+				}
+			}
+		}
+		if(totalContiguousBlockCount > 0) {
+			blockchainGame->score += pow(2, totalContiguousBlockCount);
+		}
 	}
 
-	for(int y = 0; y < 24; y++) {
+	for(int y = 0; y < bottomRow; y++) {
 		for(int x = 0; x < 24; x++) {
 			setPixelColour(x, y, brightness, blockchainGame->blocks[xyToLedIndex(x, y)]);
 		}
@@ -158,5 +184,19 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 
 		setPixelColour(x, y, brightness, blockchainGame->currentBlockchain.colour);
 	}
+
+	for(int y = 0; y < 24; y++) {
+		for(int x = 12; x < 24; x++) {
+			setPixel(x, y, brightness, 30, 30, 30);
+		}
+	}
+
+	for(int x = 0; x < 24; x++) {
+		setPixel(x, bottomRow, brightness, 30, 30, 30);
+	}
+
+	uint8_t scoreText[10];
+	sprintf(scoreText, "%.3d", blockchainGame->score);
+	drawTextColour(brightness, 13, 0, scoreText, 3, 30, 0, 0);
 }
 

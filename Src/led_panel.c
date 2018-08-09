@@ -176,3 +176,39 @@ void disableLedPanel(uint8_t *ledPanelEnabled) {
         *ledPanelEnabled = 0; 
 }
 
+
+void drawText(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t length) {
+	drawTextColour(brightness, x, y, text, length, 30, 30, 30);
+}
+
+void drawTextColour(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t length, uint8_t r, uint8_t g, uint8_t b) {
+	uint8_t xOffset = 0; 
+
+        for(int textIndex = 0; textIndex < length; textIndex++) {
+                uint8_t charToDraw = text[textIndex];
+                uint8_t charIndex = 0; 
+                if(charToDraw == 32) {
+                        charIndex = 36;
+                } else if(charToDraw >= 65 && charToDraw <= 90) {
+                        charIndex = charToDraw - 65;
+                } else if(charToDraw >= 97 && charToDraw <= 122) {
+                        charIndex = charToDraw - 97;
+                } else if(charToDraw >= 48 && charToDraw <= 57) {
+                        charIndex = charToDraw - 48 + 26;
+                }
+
+                uint8_t charWidth = characters[(charIndex * (CHAR_HEIGHT + 1))];
+                for(uint8_t charY = 0; charY < CHAR_HEIGHT; charY++) {
+                        for(uint8_t charX = 0; charX < charWidth; charX++) {
+                                uint8_t charLine = characters[(charIndex * (CHAR_HEIGHT + 1)) + charY + 1];
+                                if((charLine >> (charWidth - charX - 1)) & 1) { 
+                                        setPixel(x + charX + xOffset, y + charY, brightness, r, g, b); 
+                                } else {
+                                        setPixel(x + charX + xOffset, y + charY, brightness, 0, 0, 0);
+                                }
+                        }
+                }
+                //setPixel(xOffset, 20, brightness, 20, 20, 20);
+                xOffset += charWidth;
+        }
+}
