@@ -34,6 +34,6 @@ struct BlockchainGame {
 };
 
 void initBlockchain(struct Blockchain* blockchainGame);
-void blockchain(struct BlockchainGame* blockChainGame, uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick);
+void blockchain(struct BlockchainGame* blockChainGame, uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick, uint32_t startButtonPressed);
 
 #endif

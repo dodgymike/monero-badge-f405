@@ -20,6 +20,6 @@ struct EyeGame {
 	uint32_t dilation;
 };
 
-void eye(uint32_t brightness);
+void eye(uint32_t brightness, uint32_t startButtonPressed);
 
 #endif

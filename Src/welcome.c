@@ -50,7 +50,7 @@ uint8_t compareKonamiCodes() {
 }
 
 //uint8_t iconIndex = BUTTON_SELECT;
-void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick) {
+void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick, uint32_t startButtonPressed) {
 
 	uint8_t htpFramesLoadIndex = 0;
 	htpFrames[htpFramesLoadIndex++] = frame_00;
@@ -78,36 +78,36 @@ void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t
 	}
 */
 
-        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT, &lastButtonPressTick)) {
+        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT, lastButtonPressTick)) {
 		icon = mm_24;
 		animated = 0;
 
         }
-        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1, &lastButtonPressTick)) {
+        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1, lastButtonPressTick)) {
 		icon = LUSmile;
 		animated = 0;
 
 		addKonamiCodeButtonEntry(BUTTON_L1);
         }
-        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2, &lastButtonPressTick)) {
+        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2, lastButtonPressTick)) {
 		icon = LDSad;
 		animated = 0;
 
 		addKonamiCodeButtonEntry(BUTTON_L2);
         }
-        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3, &lastButtonPressTick)) {
+        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3, lastButtonPressTick)) {
 		icon = LLAngry;
 		animated = 0;
 
 		addKonamiCodeButtonEntry(BUTTON_L3);
         }
-        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4, &lastButtonPressTick)) {
+        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4, lastButtonPressTick)) {
 		icon = LRCrying;
 		animated = 0;
 
 		addKonamiCodeButtonEntry(BUTTON_L4);
         }
-        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1, &lastButtonPressTick)) {
+        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1, lastButtonPressTick)) {
 		animated = 0;
 		switch(logoState % 2) {
 			case 0:
@@ -122,19 +122,19 @@ void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t
 
 		addKonamiCodeButtonEntry(BUTTON_R1);
         }
-        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2, &lastButtonPressTick)) {
+        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2, lastButtonPressTick)) {
 		icon = RRTongue;
 		animated = 0;
 
 		addKonamiCodeButtonEntry(BUTTON_R2);
         }
-        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3, &lastButtonPressTick)) {
+        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3, lastButtonPressTick)) {
 		icon = RLLaugh;
 		animated = 0;
 
 		addKonamiCodeButtonEntry(BUTTON_R3);
         }
-        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4, &lastButtonPressTick)) {
+        if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4, lastButtonPressTick)) {
 		icon = RDDrunk;
 		animated = 0;
 

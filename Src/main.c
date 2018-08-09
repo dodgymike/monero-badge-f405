@@ -411,7 +411,7 @@ struct Particle {
 	uint8_t y;
 };
 
-void blind(uint32_t brightness, uint32_t whiteLevel) {
+void blind(uint32_t brightness, uint32_t whiteLevel, uint32_t startButtonPressed) {
 	for(uint8_t x = 0; x < 24; x++) {
 		for(uint8_t y = 0; y < 24; y++) {
 			setPixel(x, y, brightness, whiteLevel, whiteLevel, whiteLevel);
@@ -434,7 +434,7 @@ void lowBatteryScreen(uint32_t brightness, uint32_t* batteryFlashCounter) {
 	}
 }
 
-void random_pixels(uint32_t brightness) {
+void random_pixels(uint32_t brightness, uint32_t startButtonPressed) {
 	for(uint8_t x = 0; x < 24; x++) {
 		for(uint8_t y = 0; y < 24; y++) {
 			setPixel(x, y, brightness, rand() % 0b11111, rand() % 0b11111, rand() % 0b11111);
@@ -449,7 +449,7 @@ uint32_t rainRed = 0b11111;
 uint32_t rainGreen = 0b11111;
 uint32_t rainBlue = 0b11111;
 
-void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t* lastButtonPressTick) {
+void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t* lastButtonPressTick, uint32_t startButtonPressed) {
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1, lastButtonPressTick)) {
 		if(rainBrightness > 0) {
 			rainBrightness--;
@@ -549,7 +549,7 @@ void binToHex(uint8_t in[], uint8_t out[], uint8_t byteCount) {
 
 uint32_t irDelayDebug = 0;
 uint8_t irDelay = 26;
-void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage, uint32_t batteryVoltage100) {
+void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage, uint32_t batteryVoltage100, uint32_t startButtonPressed) {
 	for(int i = 0; i < 16; i++) {
 		setPixel(i, 0, brightness, (buttonState[i] > 256) ? 20 : 0, (buttonState[i] <= 256) ? 20 : 0, 0);
 		setPixel(i, 1, brightness, (buttonAccumulators[i] > 256) ? 20 : 0, (buttonAccumulators[i] <= 256) ? 20 : 0, 0);
@@ -1002,21 +1002,21 @@ int main(void)
 			lowBatteryScreen(0b111, &lowBatteryFlashCounter);
 		} else if(gameMode == MODE_WELCOME) {
 			//welcome(0b11111);
-			welcome(buttonState, buttonAccumulators, 0b11111, &lastButtonPressTick);
+			welcome(buttonState, buttonAccumulators, 0b11111, &lastButtonPressTick, startPressed);
 		} else if(gameMode == MODE_RAIN) {
-			rain(mean_x, mean_y, buttonState, buttonAccumulators, &lastButtonPressTick);
+			rain(mean_x, mean_y, buttonState, buttonAccumulators, &lastButtonPressTick, startPressed);
 		} else if(gameMode == MODE_BLIND) {
-			blind(0b111, 0b11111);
+			blind(0b111, 0b11111, startPressed);
 		} else if(gameMode == MODE_RANDOM) {
-			random_pixels(0b111);
+			random_pixels(0b111, startPressed);
 		} else if(gameMode == MODE_BLOCKCHAIN) {
-			blockchain(&blockchainGame, buttonState, buttonAccumulators, 0b111, &lastButtonPressTick);
+			blockchain(&blockchainGame, buttonState, buttonAccumulators, 0b111, &lastButtonPressTick, startPressed);
 		} else if(gameMode == MODE_SNAKE) {
-			snake(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick);
+			snake(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick, startPressed);
 		} else if(gameMode == MODE_EYE) {
-			eye(0b1111);
+			eye(0b1111, startPressed);
 		} else if(gameMode == MODE_DEBUG) {
-			debug(buttonState, buttonAccumulators, 0b111, batteryAdcAverage, batteryVoltage100);
+			debug(buttonState, buttonAccumulators, 0b111, batteryAdcAverage, batteryVoltage100, startPressed);
 		}
 
 		WriteLedPanelFrame(ledPanelEnabled);

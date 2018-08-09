@@ -96,10 +96,10 @@ void initSnakeFood(struct SnakeFood* snakeFood) {
 	snakeFood->expiryTick = HAL_GetTick() + 5000 + (rand() % 3000);
 }
 
-void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick) {
+void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick, uint32_t startButtonPressed) {
 	uint32_t currentTick = HAL_GetTick();
 
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_START, lastButtonPressTick)) {
+	if(startButtonPressed || buttonPressed(buttonState, buttonAccumulators, BUTTON_START, lastButtonPressTick)) {
 		for(int i = 0; i < snakeGame.snakeCount; i++) {
 			deleteSnakeTail(snakeGame.players[i].tail);
 

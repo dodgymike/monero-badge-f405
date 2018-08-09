@@ -27,7 +27,7 @@ void initEyeGame() {
 	}
 }
 
-void eye(uint32_t brightness) {
+void eye(uint32_t brightness, uint32_t startButtonPressed) {
 	/*
 	uint8_t debugText[100];
 	sprintf(debugText, "dstX (%d) dstY (%d) curX (%d) curY (%d) rateX (%d) rateY (%d)\r\n",

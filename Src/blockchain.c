@@ -79,13 +79,14 @@ void initBlockchainGame(struct BlockchainGame* blockchainGame) {
 	initBlockchain(&(blockchainGame->currentBlockchain));
 }
 
-void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick) {
+void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick, uint32_t startButtonPressed) {
 	uint32_t currentTick = HAL_GetTick();
 
 	uint8_t roundCount = 1;
 	uint8_t bottomRow = 23;
 
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_START, lastButtonPressTick)) {
+	if(startButtonPressed) {
+		initBlockchainGame(blockchainGame);
 	}
 
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1, lastButtonPressTick)) {
