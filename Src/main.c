@@ -1047,6 +1047,9 @@ int main(void)
 		uint16_t buttonMask = (1 << buttonIndex);
 		uint16_t buttonState = populatedButtonBits & buttonMask;
 		if(buttonState) {
+			if((buttonIndex == BUTTON_SELECT) && (gameMode == MODE_PLASMA)) {
+				gameMode = MODE_BLIND;
+			}
 			buttonAccumulators[buttonIndex]++;
 		} else {
 			buttonAccumulators[buttonIndex]--;

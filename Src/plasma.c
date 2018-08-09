@@ -32,6 +32,10 @@ float lookupSin(float angle, float sinLookupTable[628]) {
 
 uint32_t timeCounter = 0;
 void plasma(uint32_t brightness) {
+	if(timeCounter == 0) {
+		timeCounter = HAL_GetTick();
+	}
+
 	uint8_t screenHeight = 24;
 	uint8_t screenWidth = 24;
 
