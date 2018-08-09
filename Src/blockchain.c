@@ -197,6 +197,7 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 
 	uint8_t scoreText[10];
 	sprintf(scoreText, "%.3d", blockchainGame->score);
-	drawTextColour(brightness, 12, 0, scoreText, 3, 30, 0, 0);
+	drawTextColour(brightness, 12, 0, "SCR", 3, 30, 0, 0);
+	drawTextColour(brightness, 12, 6, scoreText, 3, 30, 0, 0);
 }
 
