@@ -134,10 +134,8 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 	if(!blockchainGame->gameOver && ((roundCount > 1) || (blockchainGame->currentBlockchain.tickCount % gameTickDelay) == 0)) {
 		while(roundCount-- > 0) {
 			(blockchainGame->currentBlockchain.y)++;
-			CDC_Transmit_FS("01\r\n", 4);
 
 			for(int blockIndex = 0; blockIndex < blockchainGame->currentBlockchain.blockCount; blockIndex++) {
-			CDC_Transmit_FS("02\r\n", 4);
 				int8_t x = blockchainGame->currentBlockchain.x + blockchainGame->currentBlockchain.blocks[blockIndex].xOffset[blockchainGame->currentBlockchain.rotation];
 				if(x >= 24) {
 					x = 23;
@@ -153,13 +151,11 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 				// stop *before* the collision
 				y++;
 				
-			CDC_Transmit_FS("03\r\n", 4);
 				if(
 					(y >= bottomRow)
 					|| (blockchainGame->blocks[xyToLedIndex(x,y)] != 0)
 				) {
 					for(int blockIndex = 0; blockIndex < blockchainGame->currentBlockchain.blockCount; blockIndex++) {
-			CDC_Transmit_FS("04\r\n", 4);
 						int8_t blockX = blockchainGame->currentBlockchain.x + blockchainGame->currentBlockchain.blocks[blockIndex].xOffset[blockchainGame->currentBlockchain.rotation];
 						if(blockX >= 24) {
 							blockX = 23;
@@ -174,16 +170,11 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 						blockchainGame->blocks[xyToLedIndex(blockX, blockY)] = blockchainGame->currentBlockchain.colour;
 					}
 				
-			CDC_Transmit_FS("05\r\n", 4);
 
-			uint8_t yDebugText[20];
-			sprintf(yDebugText, "Y (%d) blockchain y (%d)\r\n", y, blockchainGame->currentBlockchain.y);
-			CDC_Transmit_FS(yDebugText, strlen(yDebugText));
 
 					if(blockchainGame->currentBlockchain.y > 1) {
 						initBlockchain(&(blockchainGame->currentBlockchain));
 					} else {
-			CDC_Transmit_FS("GAME OVER\r\n", 11);
 						blockchainGame->gameOver = 1;
 					}
 	
@@ -193,7 +184,6 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 			}
 		}
 
-			CDC_Transmit_FS("06\r\n", 4);
 		uint32_t totalContiguousBlockCount = 0;
 		for(int y = (bottomRow - 1); y >= 0; y--) {
 			uint8_t contiguousBlockCount = 0;
@@ -212,7 +202,6 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 				}
 			}
 		}
-			CDC_Transmit_FS("07\r\n", 4);
 		if(totalContiguousBlockCount > 0) {
 			blockchainGame->score += pow(2, totalContiguousBlockCount);
 			(blockchainGame->speed) += 5;
@@ -222,14 +211,12 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 		}
 	}
 
-			CDC_Transmit_FS("08\r\n", 4);
 	for(int y = 0; y < bottomRow; y++) {
 		for(int x = 0; x < 24; x++) {
 			setPixelColour(x, y, brightness, blockchainGame->blocks[xyToLedIndex(x, y)]);
 		}
 	}
 
-			CDC_Transmit_FS("09\r\n", 4);
 	for(int blockIndex = 0; blockIndex < blockchainGame->currentBlockchain.blockCount; blockIndex++) {
 		int8_t x = blockchainGame->currentBlockchain.x + blockchainGame->currentBlockchain.blocks[blockIndex].xOffset[blockchainGame->currentBlockchain.rotation];
 		int8_t y = blockchainGame->currentBlockchain.y + blockchainGame->currentBlockchain.blocks[blockIndex].yOffset[blockchainGame->currentBlockchain.rotation];
@@ -241,14 +228,12 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 		setPixelColour(x, y, brightness, blockchainGame->currentBlockchain.colour);
 	}
 
-			CDC_Transmit_FS("10\r\n", 4);
 	for(int y = 0; y < 24; y++) {
 		for(int x = 12; x < 24; x++) {
 			setPixel(x, y, brightness, 30, 30, 30);
 		}
 	}
 
-			CDC_Transmit_FS("11\r\n", 4);
 	for(int x = 0; x < 24; x++) {
 		setPixel(x, bottomRow, brightness, 30, 30, 30);
 	}
