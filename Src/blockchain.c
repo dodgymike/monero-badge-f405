@@ -79,6 +79,8 @@ void initBlockchainGame(struct BlockchainGame* blockchainGame) {
 void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick) {
 	uint32_t currentTick = HAL_GetTick();
 
+	uint8_t roundCount = 1;
+
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_START, lastButtonPressTick)) {
 	}
 
@@ -95,6 +97,7 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 		}
 	}
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3, lastButtonPressTick)) {
+		roundCount = 100;
 	}
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4, lastButtonPressTick)) {
 		(blockchainGame->currentBlockchain.x)--;
@@ -112,30 +115,33 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4, lastButtonPressTick)) {
 	}
 
-	if((blockchainGame->currentBlockchain.tickCount)++ % 20 == 0) {
-		(blockchainGame->currentBlockchain.y)++;
+	if((roundCount > 1) || ((blockchainGame->currentBlockchain.tickCount)++ % 20 == 0)) {
+		while(roundCount-- > 0) {
+			(blockchainGame->currentBlockchain.y)++;
 
-		for(int blockIndex = 0; blockIndex < blockchainGame->currentBlockchain.blockCount; blockIndex++) {
-			uint8_t x = blockchainGame->currentBlockchain.x + blockchainGame->currentBlockchain.blocks[blockIndex].xOffset[blockchainGame->currentBlockchain.rotation];
-			uint8_t y = blockchainGame->currentBlockchain.y + blockchainGame->currentBlockchain.blocks[blockIndex].yOffset[blockchainGame->currentBlockchain.rotation];
-
-			// stop *before* the collision
-			y++;
-			
-			if(
-				(y >= 24)
-				|| (blockchainGame->blocks[xyToLedIndex(x,y)] != 0)
-			) {
-				for(int blockIndex = 0; blockIndex < blockchainGame->currentBlockchain.blockCount; blockIndex++) {
-					uint8_t x = blockchainGame->currentBlockchain.x + blockchainGame->currentBlockchain.blocks[blockIndex].xOffset[blockchainGame->currentBlockchain.rotation];
-					uint8_t y = blockchainGame->currentBlockchain.y + blockchainGame->currentBlockchain.blocks[blockIndex].yOffset[blockchainGame->currentBlockchain.rotation];
-
-					blockchainGame->blocks[xyToLedIndex(x, y)] = blockchainGame->currentBlockchain.colour;
+			for(int blockIndex = 0; blockIndex < blockchainGame->currentBlockchain.blockCount; blockIndex++) {
+				uint8_t x = blockchainGame->currentBlockchain.x + blockchainGame->currentBlockchain.blocks[blockIndex].xOffset[blockchainGame->currentBlockchain.rotation];
+				uint8_t y = blockchainGame->currentBlockchain.y + blockchainGame->currentBlockchain.blocks[blockIndex].yOffset[blockchainGame->currentBlockchain.rotation];
+	
+				// stop *before* the collision
+				y++;
+				
+				if(
+					(y >= 24)
+					|| (blockchainGame->blocks[xyToLedIndex(x,y)] != 0)
+				) {
+					for(int blockIndex = 0; blockIndex < blockchainGame->currentBlockchain.blockCount; blockIndex++) {
+						uint8_t x = blockchainGame->currentBlockchain.x + blockchainGame->currentBlockchain.blocks[blockIndex].xOffset[blockchainGame->currentBlockchain.rotation];
+						uint8_t y = blockchainGame->currentBlockchain.y + blockchainGame->currentBlockchain.blocks[blockIndex].yOffset[blockchainGame->currentBlockchain.rotation];
+	
+						blockchainGame->blocks[xyToLedIndex(x, y)] = blockchainGame->currentBlockchain.colour;
+					}
+				
+					initBlockchain(&(blockchainGame->currentBlockchain));
+	
+					roundCount = 1;
+					break;
 				}
-			
-				initBlockchain(&(blockchainGame->currentBlockchain));
-
-				break;
 			}
 		}
 	}
