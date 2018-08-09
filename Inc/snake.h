@@ -67,7 +67,7 @@ void addSnakeTail(struct SnakePlayer* snakePlayer);
 void updateSnakeTailPositions(struct SnakeTail* snakeTail, uint16_t x, uint16_t y);
 void deleteSnakeTail(struct SnakeTail* snakeTail);
 uint8_t tailContainsCoords(struct SnakeTail* snakeTail, uint16_t x, uint16_t y, uint16_t depth);
-void initSnakePlayer(struct SnakePlayer* snakePlayer);
+void initSnakePlayer(struct SnakePlayer* snakePlayer, uint8_t r, uint8_t g, uint8_t b);
 void initSnakeFood(struct SnakeFood* snakeFood);
 void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick, uint32_t startButtonPressed);
 

@@ -75,11 +75,12 @@ uint8_t tailContainsCoords(struct SnakeTail* snakeTail, uint16_t x, uint16_t y, 
 	return 0;
 }
 
-void initSnakePlayer(struct SnakePlayer* snakePlayer) {
+void initSnakePlayer(struct SnakePlayer* snakePlayer, uint8_t r, uint8_t g, uint8_t b) {
 	snakePlayer->playing = 1;
 	snakePlayer->x = rand() % 24;
 	snakePlayer->y = rand() % 24;
-	snakePlayer->colour = rgbToPixel(20, rand() % 0b11111, rand() % 0b11111, rand() % 0b11111);
+	//snakePlayer->colour = rgbToPixel(20, rand() % 0b11111, rand() % 0b11111, rand() % 0b11111);
+	snakePlayer->colour = rgbToPixel(20, r, g, b);
 	snakePlayer->location = 0;
 	snakePlayer->direction = 0;
 	snakePlayer->lastMovementTick = 0;
@@ -113,10 +114,10 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	}
 
 	if(snakeGame.snakeCount == 0) {
-		initSnakePlayer(&(snakeGame.players[0]));
+		initSnakePlayer(&(snakeGame.players[0]), 0, 30, 0);
 		snakeGame.snakeCount++;
 
-		initSnakePlayer(&(snakeGame.players[1]));
+		initSnakePlayer(&(snakeGame.players[1]), 30, 0, 0);
 		snakeGame.snakeCount++;
 	}
 
@@ -248,7 +249,7 @@ void snake(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	// DRAW SNAKE FOOD
 	for(int snakeFoodIndex = 0; snakeFoodIndex < snakeGame.snakeCount; snakeFoodIndex++) {
 		if(snakeGame.snakeFood[snakeFoodIndex] != NULL) {
-			setPixel(snakeGame.snakeFood[snakeFoodIndex]->x, snakeGame.snakeFood[snakeFoodIndex]->y, 0b111, 0b11111, 0, 0);
+			setPixel(snakeGame.snakeFood[snakeFoodIndex]->x, snakeGame.snakeFood[snakeFoodIndex]->y, 0b111, 0, 0, 0b11111);
 		}
 	}
 }
