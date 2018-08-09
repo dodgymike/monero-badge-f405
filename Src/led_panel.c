@@ -97,6 +97,9 @@ void WriteLedPanelFrame(uint8_t ledPanelEnabled)
 		}
 	}
 
+	// BUG for final pixel randomness?
+	HAL_SPI_Transmit(&hspi2, off_led_data, led_frame_size, HAL_MAX_DELAY);
+
         HAL_SPI_Transmit(&hspi2, end_frame_data, led_frame_size * 8, HAL_MAX_DELAY);
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
