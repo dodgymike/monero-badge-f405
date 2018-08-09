@@ -911,8 +911,9 @@ int main(void)
 	//sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
 	//serialSend(accDebugString);
 
-	if(HAL_GetTick() - lastButtonPressTick > 600000) {
+	if(HAL_GetTick() - lastButtonPressTick > 1800000) {
 		disableLedPanel(&ledPanelEnabled);
+        	disablePower();
 	} else {
 		enableLedPanel(&ledPanelEnabled);
 	}
