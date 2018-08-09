@@ -78,6 +78,7 @@ void initBlockchainGame(struct BlockchainGame* blockchainGame) {
 
 	blockchainGame->gameOver = 0;
 	blockchainGame->score = 0;
+	blockchainGame->speed = 0;
 
 	initBlockchain(&(blockchainGame->currentBlockchain));
 }
@@ -127,7 +128,8 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4, lastButtonPressTick)) {
 	}
 
-	if((roundCount > 1) || ((blockchainGame->currentBlockchain.tickCount)++ % 20 == 0)) {
+	uint16_t gameTickDelay = (200 - blockchainGame->speed) / 10;
+	if((roundCount > 1) || ((blockchainGame->currentBlockchain.tickCount)++ % gameTickDelay) == 0) {
 		while(roundCount-- > 0) {
 			(blockchainGame->currentBlockchain.y)++;
 
@@ -194,6 +196,10 @@ void blockchain(struct BlockchainGame* blockchainGame, uint32_t buttonState[16],
 		}
 		if(totalContiguousBlockCount > 0) {
 			blockchainGame->score += pow(2, totalContiguousBlockCount);
+			(blockchainGame->speed) += 5;
+			if(blockchainGame->speed > 200) {
+				blockchainGame->speed = 200;
+			}
 		}
 	}
 

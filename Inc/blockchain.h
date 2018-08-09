@@ -14,8 +14,8 @@ struct Block {
 
 struct Blockchain {
 	uint32_t tickCount;
-	uint8_t x;
-	uint8_t y;
+	int8_t x;
+	int8_t y;
 	uint8_t rotation;
 	uint32_t colour;
 
@@ -26,6 +26,7 @@ struct Blockchain {
 };
 
 struct BlockchainGame {
+	int16_t speed;
 	uint32_t score;
 	uint8_t gameOver;
 	uint32_t blocks[24*24];
