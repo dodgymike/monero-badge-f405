@@ -25,9 +25,10 @@ void initBlockchain(struct Blockchain* blockchain) {
 
 	blockchain->blockCount = 4;
 
-	uint8_t blockIndex = 0;
-	uint8_t rotationIndex = 0;
-	for(int i = 0; i < 2; i++) {
+	for(int i = 0; i < 4; i += 2) {
+		uint8_t blockIndex = 0;
+		uint8_t rotationIndex = 0;
+
 		blockchain->blocks[blockIndex].xOffset[rotationIndex + i] = 0;
 		blockchain->blocks[blockIndex].yOffset[rotationIndex + i] = 0;
 		blockIndex++;
