@@ -1002,7 +1002,7 @@ int main(void)
 			lowBatteryScreen(0b111, &lowBatteryFlashCounter);
 		} else if(gameMode == MODE_WELCOME) {
 			//welcome(0b11111);
-			welcome(buttonState, buttonAccumulators, 0b11111, &lastButtonPressTick, startPressed);
+			welcome(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick, startPressed);
 		} else if(gameMode == MODE_RAIN) {
 			rain(mean_x, mean_y, buttonState, buttonAccumulators, &lastButtonPressTick, startPressed);
 		} else if(gameMode == MODE_BLIND) {
