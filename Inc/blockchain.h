@@ -8,8 +8,8 @@
 #include <string.h>
 
 struct Block {
-	uint8_t xOffset[4];
-	uint8_t yOffset[4];
+	int8_t xOffset[4];
+	int8_t yOffset[4];
 };
 
 struct Blockchain {
