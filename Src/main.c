@@ -59,6 +59,7 @@
 #include "snake.h"
 #include "buttons.h"
 #include "led_panel.h"
+#include "blockchain.h"
 
 /* USER CODE END Includes */
 
@@ -1115,6 +1116,9 @@ int main(void)
 
 	enableLedPanel(&ledPanelEnabled);
 
+	struct BlockchainGame blockchainGame;
+	initBlockchainGame(&blockchainGame);
+
   //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
@@ -1301,7 +1305,7 @@ int main(void)
 		} else if(gameMode == MODE_RANDOM) {
 			random_pixels(0b111);
 		} else if(gameMode == MODE_BLOCKCHAIN) {
-			blockchain(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick);
+			blockchain(&blockchainGame, buttonState, buttonAccumulators, 0b111, &lastButtonPressTick);
 		} else if(gameMode == MODE_SNAKE) {
 			snake(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick);
 		} else if(gameMode == MODE_EYE) {

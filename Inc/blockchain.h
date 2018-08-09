@@ -8,13 +8,21 @@
 #include <string.h>
 
 struct Block {
-	uint8_t xOffset;
-	uint8_t yOffset;
+	uint8_t xOffset[4];
+	uint8_t yOffset[4];
 };
 
 struct Blockchain {
+	uint32_t tickCount;
+	uint8_t x;
+	uint8_t y;
+	uint8_t rotation;
 	uint32_t colour;
+
+	uint8_t blockCount;
 	struct Block blocks[10];
+
+	uint32_t lastMoveTickTime;
 };
 
 struct BlockchainGame {
@@ -23,7 +31,7 @@ struct BlockchainGame {
 	struct Blockchain nextBlockchain;
 };
 
-void initBlockchain(struct BlockchainGame* blockchainGame);
+void initBlockchain(struct Blockchain* blockchainGame);
 void blockchain(struct BlockchainGame* blockChainGame, uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick);
 
 #endif
