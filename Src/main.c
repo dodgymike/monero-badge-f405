@@ -104,6 +104,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 #define MODE_EYE         0b0000000000100000
 #define MODE_WELCOME     0b0000000001000000
 #define MODE_BLOCKCHAIN  0b0000000010000000
+#define MODE_PLASMA      0b0000000100000000
 
 uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button, uint32_t* lastButtonPressTick) {
 	uint8_t buttonPressed = 0;
@@ -985,15 +986,18 @@ int main(void)
 					gameMode = MODE_EYE;
 					break;
 				case MODE_EYE:
-					gameMode = MODE_DEBUG;
+					gameMode = MODE_PLASMA;
 					break;
-				case MODE_DEBUG:
+				case MODE_PLASMA:
 					gameMode = MODE_BLIND;
 					break;
 				case MODE_BLIND:
 					gameMode = MODE_RANDOM;
 					break;
 				case MODE_RANDOM:
+					gameMode = MODE_DEBUG;
+					break;
+				case MODE_DEBUG:
 					gameMode = MODE_WELCOME;
 					break;
 			}
@@ -1014,6 +1018,8 @@ int main(void)
 			blockchain(&blockchainGame, buttonState, buttonAccumulators, 0b111, &lastButtonPressTick, startPressed);
 		} else if(gameMode == MODE_SNAKE) {
 			snake(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick, startPressed);
+		} else if(gameMode == MODE_PLASMA) {
+			plasma(0b1);
 		} else if(gameMode == MODE_EYE) {
 			eye(0b1111, startPressed);
 		} else if(gameMode == MODE_DEBUG) {
