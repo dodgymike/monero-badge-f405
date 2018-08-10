@@ -227,7 +227,8 @@ void calculateStdDevs(uint8_t bufferSize, uint16_t* mean_x, uint16_t* mean_y, ui
         }
 }
 
-void serialSend(int8_t* buffer) {
+void serialSend(uint8_t* buffer) {
+	CDC_Transmit_FS(buffer, strlen(buffer));
         //HAL_UART_Receive(&huart2, buffer, sizeof(buffer), HAL_MAX_DELAY);
         //HAL_UART_Transmit(&huart6, buffer, 2, HAL_MAX_DELAY);
 //        HAL_UART_Transmit(&huart3, buffer, strlen(buffer), HAL_MAX_DELAY);
@@ -269,6 +270,7 @@ uint8_t spiBusWriteRegister(SPI_HandleTypeDef* spi, uint8_t mpuRegister, uint8_t
 }
 
 void initMPU6000() {
+	serialSend("Initialising MPU6000");
 	spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_1, BIT_H_RESET);
         HAL_Delay(200);
 	
@@ -276,6 +278,7 @@ void initMPU6000() {
 	uint8_t debugBuffer[100];
 	
 	for(int i = 0; i < 5; i++) {
+		serialSend("Sending Whoami");
 		uint8_t whoAmI = spiBusReadRegister(&hspi1, MPU_RA_WHO_AM_I);
 
 		if(whoAmI == MPU6000_WHO_AM_I_CONST) {
@@ -778,10 +781,6 @@ int main(void)
 	uint8_t IRHello[] = "bobmonkey";
 	irTX(IRHello, strlen(IRHello));
 
-  serialSend("Initialising MPU6000: ");
-
-  initMPU6000();
-  serialSend("DONE\r\n");
 
 	uint32_t batteryAdcAverage = 0;
 	uint32_t batteryAdcValuesSize = 3000;
@@ -824,6 +823,14 @@ int main(void)
 
 	struct BlockchainGame blockchainGame;
 	initBlockchainGame(&blockchainGame);
+
+	if(0) {
+		HAL_Delay(2000);
+		serialSend("Initialising MPU6000: ");
+
+		initMPU6000();
+		serialSend("DONE\r\n");
+	}
 
   //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
   /* USER CODE END 2 */
@@ -1175,9 +1182,9 @@ static void MX_SPI1_Init(void)
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
