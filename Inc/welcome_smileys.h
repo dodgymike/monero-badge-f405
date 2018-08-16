@@ -11,6 +11,17 @@
 #include "RRTongue.bmp.h"
 #include "RUDefcon.bmp.h"
 
+#include "partyparrot_00_delay-0.04s.gif.h"
+#include "partyparrot_01_delay-0.04s.gif.h"
+#include "partyparrot_02_delay-0.04s.gif.h"
+#include "partyparrot_03_delay-0.04s.gif.h"
+#include "partyparrot_04_delay-0.04s.gif.h"
+#include "partyparrot_05_delay-0.04s.gif.h"
+#include "partyparrot_06_delay-0.04s.gif.h"
+#include "partyparrot_07_delay-0.04s.gif.h"
+#include "partyparrot_08_delay-0.04s.gif.h"
+#include "partyparrot_09_delay-0.04s.gif.h"
+
 #include "frame_00_delay-0.2s.gif.h"
 #include "frame_01_delay-0.2s.gif.h"
 #include "frame_02_delay-0.2s.gif.h"

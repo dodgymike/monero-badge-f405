@@ -13,6 +13,11 @@ uint32_t htpFrameCounter = 0;
 
 uint32_t* htpFrames[18];
 
+// partyparrot!
+uint32_t ppFrameIndex = 0;
+uint32_t ppFrameCounter = 0;
+uint32_t* ppFrames[10];
+
 #define KONAMI_CODE_SIZE 10
 
 uint8_t konamiCodeReference[] = {
@@ -49,6 +54,35 @@ uint8_t compareKonamiCodes() {
 	return 1;
 }
 
+#define PARTY_PARROT_CODE_SIZE 3
+
+uint8_t partyParrotCodeReference[] = {
+	BUTTON_L4,
+	BUTTON_L4,
+	BUTTON_L2,
+};
+
+uint8_t partyparrotCodes[PARTY_PARROT_CODE_SIZE];
+uint8_t partyparrotIndex = 0;
+
+void addPartyParrotCodeButtonEntry(uint32_t button) {
+	for(int i = PARTY_PARROT_CODE_SIZE - 1; i > 0; i--) {
+		partyparrotCodes[i] = partyparrotCodes[i - 1];
+	}
+
+	partyparrotCodes[0] = button;
+}
+
+uint8_t comparePartyParrotCodes() {
+	for(int i = 0; i < PARTY_PARROT_CODE_SIZE; i++) {
+		if(partyparrotCodes[i] != partyParrotCodeReference[PARTY_PARROT_CODE_SIZE - i - 1]) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 //uint8_t iconIndex = BUTTON_SELECT;
 void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t* lastButtonPressTick, uint32_t startButtonPressed) {
 
@@ -72,6 +106,18 @@ void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t
 	htpFrames[htpFramesLoadIndex++] = frame_16;
 	htpFrames[htpFramesLoadIndex++] = frame_17;
 
+	uint8_t ppFramesLoadIndex = 0;
+	ppFrames[ppFramesLoadIndex++] = partyparrot_00;
+	ppFrames[ppFramesLoadIndex++] = partyparrot_01;
+	ppFrames[ppFramesLoadIndex++] = partyparrot_02;
+	ppFrames[ppFramesLoadIndex++] = partyparrot_03;
+	ppFrames[ppFramesLoadIndex++] = partyparrot_04;
+	ppFrames[ppFramesLoadIndex++] = partyparrot_05;
+	ppFrames[ppFramesLoadIndex++] = partyparrot_06;
+	ppFrames[ppFramesLoadIndex++] = partyparrot_07;
+	ppFrames[ppFramesLoadIndex++] = partyparrot_08;
+	ppFrames[ppFramesLoadIndex++] = partyparrot_09;
+
 /*
 	if(welcomeScreenCounter > 0) {
 		welcomeScreenCounter--;
@@ -94,6 +140,7 @@ void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t
 		animated = 0;
 
 		addKonamiCodeButtonEntry(BUTTON_L2);
+		addPartyParrotCodeButtonEntry(BUTTON_L2);
         }
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3, lastButtonPressTick)) {
 		icon = LLAngry;
@@ -106,6 +153,7 @@ void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t
 		animated = 0;
 
 		addKonamiCodeButtonEntry(BUTTON_L4);
+		addPartyParrotCodeButtonEntry(BUTTON_L4);
         }
         if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1, lastButtonPressTick)) {
 		animated = 0;
@@ -146,6 +194,15 @@ void welcome(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t
 			icon = htpFrames[htpFrameIndex++];
 			if(htpFrameIndex >= 18) {
 				htpFrameIndex = 0;
+			}
+		}
+	}
+
+	if(comparePartyParrotCodes()) {
+		if(ppFrameCounter++ % 4 == 0) {
+			icon = ppFrames[ppFrameIndex++];
+			if(ppFrameIndex >= 10) {
+				ppFrameIndex = 0;
 			}
 		}
 	}
