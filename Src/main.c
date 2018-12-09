@@ -269,15 +269,15 @@ uint8_t spiBusWriteRegister(SPI_HandleTypeDef* spi, uint8_t mpuRegister, uint8_t
 	return 0;
 }
 
-void initMPU6000() {
+uint8_t initMPU6000() {
 	serialSend("Initialising MPU6000");
 	spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_1, BIT_H_RESET);
         HAL_Delay(200);
-	
 
 	uint8_t debugBuffer[100];
 	
-	for(int i = 0; i < 5; i++) {
+	while(1) {
+	//for(int i = 0; i < 5; i++) {
 		serialSend("Sending Whoami");
 		uint8_t whoAmI = spiBusReadRegister(&hspi1, MPU_RA_WHO_AM_I);
 
@@ -295,7 +295,7 @@ void initMPU6000() {
 
        	HAL_Delay(20);
 	const uint8_t productID = spiBusReadRegister(&hspi1, MPU_RA_PRODUCT_ID);
-	uint8_t* productIDString;
+	char* productIDString;
 	switch(productID) {
 		case MPU6000ES_REV_C4:
 			productIDString = "MPU6000ES_REV_C4";
@@ -348,7 +348,8 @@ void initMPU6000() {
     HAL_Delay(150);
 
     // Clock Source PPL with Z axis gyro reference
-    spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_1, MPU_CLK_SEL_PLLGYROZ);
+    //spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_1, MPU_CLK_SEL_PLLGYROZ);
+    spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_1, MPU_CLK_INT_8MHZ);
     HAL_Delay(15);
 
     // Disable Primary I2C Interface
@@ -368,7 +369,8 @@ void initMPU6000() {
     HAL_Delay(15);
 
     // Accel +/- 8 G Full Scale
-    spiBusWriteRegister(&hspi1, MPU_RA_ACCEL_CONFIG, INV_FSR_8G << 3);
+    //spiBusWriteRegister(&hspi1, MPU_RA_ACCEL_CONFIG, INV_FSR_8G << 3);
+    spiBusWriteRegister(&hspi1, MPU_RA_ACCEL_CONFIG, INV_FSR_2G << 3);
     HAL_Delay(15);
 
     spiBusWriteRegister(&hspi1, MPU_RA_INT_PIN_CFG, 0 << 7 | 0 << 6 | 0 << 5 | 1 << 4 | 0 << 3 | 0 << 2 | 0 << 1 | 0 << 0);  // INT_ANYRD_2CLEAR
@@ -379,23 +381,49 @@ void initMPU6000() {
     HAL_Delay(15);
 #endif
 
+    return productID;
 }
 
-void readAcc(int16_t *accData)
+void readGyro(int16_t gyroData[])
 {
-    int16_t data[6];
+    uint16_t x_h = spiBusReadRegister(&hspi1, MPU_RA_GYRO_XOUT_H);
+    uint16_t x_l = spiBusReadRegister(&hspi1, MPU_RA_GYRO_XOUT_L);
+    uint16_t y_h = spiBusReadRegister(&hspi1, MPU_RA_GYRO_YOUT_H);
+    uint16_t y_l = spiBusReadRegister(&hspi1, MPU_RA_GYRO_YOUT_L);
+    uint16_t z_h = spiBusReadRegister(&hspi1, MPU_RA_GYRO_ZOUT_H);
+    uint16_t z_l = spiBusReadRegister(&hspi1, MPU_RA_GYRO_ZOUT_L);
 
-    spiBusReadRegisterBuffer(&hspi1, MPU_RA_ACCEL_XOUT_H, (uint8_t*)&data, 6); 
+    gyroData[0] = (int16_t)((x_h << 8) | x_l);
+    gyroData[1] = (int16_t)((y_h << 8) | y_l);
+    gyroData[2] = (int16_t)((z_h << 8) | z_l);
+}
+
+void readAcc(int16_t accData[])
+{
+//    int16_t data[6];
+
+    uint16_t x_h = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_XOUT_H);
+    uint16_t x_l = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_XOUT_L);
+    uint16_t y_h = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_YOUT_H);
+    uint16_t y_l = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_YOUT_L);
+    uint16_t z_h = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_ZOUT_H);
+    uint16_t z_l = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_ZOUT_L);
+
+    accData[0] = (int16_t)((x_h << 8) | x_l);
+    accData[1] = (int16_t)((y_h << 8) | y_l);
+    accData[2] = (int16_t)((z_h << 8) | z_l);
+/*
+    accData[0] = (int16_t)((data[0] << 8) | data[1]);
+    accData[1] = (int16_t)((data[2] << 8) | data[3]);
+    accData[2] = (int16_t)((data[4] << 8) | data[5]);
+*/
+
 /*
     const bool ack = busReadRegisterBuffer(&acc->bus, MPU_RA_ACCEL_XOUT_H, data, 6); 
     if (!ack) {
         return false;
     }   
 */
-
-    accData[0] = (int16_t)((data[0] << 8) | data[1]);
-    accData[1] = (int16_t)((data[2] << 8) | data[3]);
-    accData[2] = (int16_t)((data[4] << 8) | data[5]);
 
 /*
     if(accData[0] & 0xf000) {
@@ -759,6 +787,7 @@ int main(void)
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
 
 	uint32_t lowBatteryFlashCounter = 0;
 	uint8_t ledPanelEnabled = 0;
@@ -801,7 +830,8 @@ int main(void)
   int16_t std_y = 0;
   int16_t std_z = 0;
 
-  int16_t accData[3];
+	int16_t accData[3];
+	int16_t gyroData[3];
 
 	uint32_t buttonAccumulators[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 	uint32_t buttonState[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
@@ -828,7 +858,8 @@ int main(void)
 		HAL_Delay(2000);
 		serialSend("Initialising MPU6000: ");
 
-		initMPU6000();
+		uint8_t productID = 0;
+		while((productID = initMPU6000()) == 0) {}
 		serialSend("DONE\r\n");
 	}
 
@@ -844,9 +875,6 @@ int main(void)
   /* USER CODE BEGIN 3 */
 	//serialSend("Loop\r\n");
 
-	//serialSend("Reading from acc: ");
-	//readAcc(&accData);
-	//serialSend("Done\r\n");
 
 
 	/*
@@ -927,13 +955,18 @@ int main(void)
 	}
 /*
 */
-
 	if(HAL_GetTick() - last_tick > 50) {
+
 		last_tick = HAL_GetTick();
 		ClearPixels();
 
+		readAcc(accData);
+		readGyro(gyroData);
+		char accDebugString[120];
+		sprintf(accDebugString, "acc x (% .6d) y (% .6d) z (% .6d) gyro x (% .6d) y (% .6d) z (% .6d)\r\n", accData[0], accData[1], accData[2], gyroData[0], gyroData[1], gyroData[2]);
+		serialSend(accDebugString);
+
 		uint32_t batteryAdcAccumulator = 0;
-		//for(uint32_t i = 0; i < batteryAdcValuesSize; i++) {
 		for(uint32_t adcValueIndex = 0; adcValueIndex < batteryAdcValuesSize; adcValueIndex++) {
 			if(batteryAdcValues[adcValueIndex] > 4096) {
 				continue;
@@ -1181,10 +1214,10 @@ static void MX_SPI1_Init(void)
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;

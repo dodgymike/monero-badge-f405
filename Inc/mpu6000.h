@@ -23,6 +23,7 @@ A lot of this code was taken from CleanFlight/Betaflight source:
 #define BIT_SLEEP                   0x40
 #define BIT_H_RESET                 0x80
 #define BITS_CLKSEL                 0x07
+#define MPU_CLK_INT_8MHZ            0x00
 #define MPU_CLK_SEL_PLLGYROX        0x01
 #define MPU_CLK_SEL_PLLGYROZ        0x03
 #define MPU_EXT_SYNC_GYROX          0x02
@@ -235,5 +236,5 @@ typedef enum {
 
 
 void discoverMPU();
-void initMPU6000();
+uint8_t initMPU6000();
 
