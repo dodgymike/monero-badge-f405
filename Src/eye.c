@@ -27,7 +27,7 @@ void initEyeGame() {
 	}
 }
 
-void eye(uint32_t brightness, uint32_t startButtonPressed) {
+void eye(uint32_t brightness, uint32_t startButtonPressed, int16_t* accData) {
 	/*
 	uint8_t debugText[100];
 	sprintf(debugText, "dstX (%d) dstY (%d) curX (%d) curY (%d) rateX (%d) rateY (%d)\r\n",
@@ -89,14 +89,28 @@ void eye(uint32_t brightness, uint32_t startButtonPressed) {
 		eyeGame->currentY += eyeGame->rateY;
 	}
 
-	if((eyeGame->currentX == eyeGame->destinationX) && (eyeGame->currentY == eyeGame->destinationY)) {
-		eyeGame->destinationX = 10 * ((rand() % 16) - 8);
-		eyeGame->destinationY = 10 * ((rand() % 16) - 8);
+	int16_t accX = accData[1];
+	int16_t accZ = accData[2];
+	int16_t gyrY = accData[4];
 
-		eyeGame->dilation = (rand() % 3) + 1;
+	eyeGame->destinationX = -(accX / 200);
+	eyeGame->destinationY = -(accZ / 200);
+
+	char accDebugString[120];
+	//sprintf(accDebugString, "acc x (% .6d) y (% .6d) z (% .6d) gyro x (% .6d) y (% .6d) z (% .6d)\r\n", accData[0], accData[1], accData[2], accData[3], accData[4], accData[5]);
+	sprintf(accDebugString, "accZ (% .6d) accX (% .6d) destinationY (% .6d) destination X (% .6d)\r\n", accZ, accX, eyeGame->destinationY, eyeGame->destinationX);
+	serialSend(accDebugString);
+
+//	if((eyeGame->currentX == eyeGame->destinationX) && (eyeGame->currentY == eyeGame->destinationY)) {
+		//eyeGame->destinationX = 10 * ((rand() % 16) - 8);
+		//eyeGame->destinationY = 10 * ((rand() % 16) - 8);
+
+
+		//eyeGame->dilation = (rand() % 3) + 1;
+		eyeGame->dilation = 3;
 
 		eyeGame->rateX = ((eyeGame->destinationX - eyeGame->currentX) > 0) ? 10 : -10;
 		eyeGame->rateY = ((eyeGame->destinationY - eyeGame->currentY) > 0) ? 10 : -10;
-	}
+//	}
 }
 

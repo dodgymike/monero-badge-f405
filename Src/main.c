@@ -239,9 +239,13 @@ uint8_t spiBusReadRegister(SPI_HandleTypeDef* spi, uint8_t mpuRegister) {
 	uint8_t rxBuffer[20];
 
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	//HAL_Delay(1);
+
 	//HAL_SPI_TransmitReceive(spi, &registerWithFlag, rxBuffer, 1, HAL_MAX_DELAY);
 	HAL_SPI_Transmit(spi, &registerWithFlag, 1, HAL_MAX_DELAY);
 	HAL_SPI_Receive(spi, &rxBuffer, 1, HAL_MAX_DELAY);
+
+	//HAL_Delay(1);
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
 
 	return rxBuffer[0];
@@ -251,13 +255,22 @@ uint8_t spiBusReadRegisterBuffer(SPI_HandleTypeDef* spi, uint8_t mpuRegister, ui
 	uint8_t registerWithFlag = 0b10000000 | mpuRegister;
 
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	HAL_Delay(1);
+
 	//HAL_SPI_TransmitReceive(spi, &registerWithFlag, rxBuffer, 1, HAL_MAX_DELAY);
 	HAL_SPI_Transmit(spi, &registerWithFlag, 1, HAL_MAX_DELAY);
 	HAL_SPI_Receive(spi, rxBuffer, bufferSize, HAL_MAX_DELAY);
+
+	HAL_Delay(1);
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
 
 	return rxBuffer[0];
 }
+
+/*
+157     spiTransferByte(bus->busdev_u.spi.instance, reg | 0x80); // read transaction
+158     spiTransfer(bus->busdev_u.spi.instance, NULL, data, length);
+*/
 
 uint8_t spiBusWriteRegister(SPI_HandleTypeDef* spi, uint8_t mpuRegister, uint8_t value) {
 	uint8_t writeBuffer[2] = { 0b00000000 | mpuRegister, value };
@@ -362,6 +375,11 @@ uint8_t initMPU6000() {
     // Accel Sample Rate 1kHz
     // Gyroscope Output Rate =  1kHz when the DLPF is enabled
     //spiBusWriteRegister(&hspi1, MPU_RA_SMPLRT_DIV, gyro->mpuDividerDrops);
+    spiBusWriteRegister(&hspi1, MPU_RA_SMPLRT_DIV, 7);
+    HAL_Delay(15);
+
+    // DLPF
+    spiBusWriteRegister(&hspi1, MPU_RA_CONFIG, 4 << 0);
     HAL_Delay(15);
 
     // Gyro +/- 1000 DPS Full Scale
@@ -373,35 +391,23 @@ uint8_t initMPU6000() {
     spiBusWriteRegister(&hspi1, MPU_RA_ACCEL_CONFIG, INV_FSR_2G << 3);
     HAL_Delay(15);
 
-    spiBusWriteRegister(&hspi1, MPU_RA_INT_PIN_CFG, 0 << 7 | 0 << 6 | 0 << 5 | 1 << 4 | 0 << 3 | 0 << 2 | 0 << 1 | 0 << 0);  // INT_ANYRD_2CLEAR
+    spiBusWriteRegister(&hspi1, MPU_RA_FIFO_EN, 0 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3 | 0 << 2 | 0 << 1 | 0 << 0);  // INT_ANYRD_2CLEAR
     HAL_Delay(15);
 
-#ifdef USE_MPU_DATA_READY_SIGNAL
+    spiBusWriteRegister(&hspi1, MPU_RA_INT_PIN_CFG, 0 << 7 | 0 << 6 | 1 << 5 | 0 << 4 | 0 << 3 | 0 << 2 | 0 << 1 | 0 << 0);  // INT_ANYRD_2CLEAR
+    HAL_Delay(15);
+
     spiBusWriteRegister(&hspi1, MPU_RA_INT_ENABLE, MPU_RF_DATA_RDY_EN);
     HAL_Delay(15);
-#endif
 
     return productID;
 }
 
-void readGyro(int16_t gyroData[])
-{
-    uint16_t x_h = spiBusReadRegister(&hspi1, MPU_RA_GYRO_XOUT_H);
-    uint16_t x_l = spiBusReadRegister(&hspi1, MPU_RA_GYRO_XOUT_L);
-    uint16_t y_h = spiBusReadRegister(&hspi1, MPU_RA_GYRO_YOUT_H);
-    uint16_t y_l = spiBusReadRegister(&hspi1, MPU_RA_GYRO_YOUT_L);
-    uint16_t z_h = spiBusReadRegister(&hspi1, MPU_RA_GYRO_ZOUT_H);
-    uint16_t z_l = spiBusReadRegister(&hspi1, MPU_RA_GYRO_ZOUT_L);
-
-    gyroData[0] = (int16_t)((x_h << 8) | x_l);
-    gyroData[1] = (int16_t)((y_h << 8) | y_l);
-    gyroData[2] = (int16_t)((z_h << 8) | z_l);
-}
-
-void readAcc(int16_t accData[])
+void readAccAndGyro(int16_t* accData)
 {
 //    int16_t data[6];
 
+/*
     uint16_t x_h = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_XOUT_H);
     uint16_t x_l = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_XOUT_L);
     uint16_t y_h = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_YOUT_H);
@@ -412,6 +418,45 @@ void readAcc(int16_t accData[])
     accData[0] = (int16_t)((x_h << 8) | x_l);
     accData[1] = (int16_t)((y_h << 8) | y_l);
     accData[2] = (int16_t)((z_h << 8) | z_l);
+*/
+
+    uint8_t mpuData[12];
+    bzero(mpuData, 12);
+
+    spiBusReadRegisterBuffer(&hspi1, MPU_RA_ACCEL_XOUT_H, mpuData, 12);
+
+/*
+	uint16_t mpuDebugDataIndex = 0;
+	char accDebugString[120];
+	sprintf(accDebugString, "% .6d,% .6d:% .6d,% .6d:% .6d,% .6d:% .6d,% .6d:% .6d,% .6d:% .6d,% .6d\r\n", ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]));
+	serialSend(accDebugString);
+*/
+
+/*
+    if(!mpuData[0]) {
+	return;
+    }
+*/
+
+    uint8_t mpuDataIndex = 0;
+    accData[0] = (((int8_t)mpuData[0]) << 8) + ((uint8_t)mpuData[1]);
+    accData[1] = (((int8_t)mpuData[2]) << 8) + ((uint8_t)mpuData[3]);
+    accData[2] = (((int8_t)mpuData[4]) << 8) + ((uint8_t)mpuData[5]);
+
+    accData[3] = (((int8_t)mpuData[6]) << 8) + ((uint8_t)mpuData[7]);
+    accData[4] = (((int8_t)mpuData[8]) << 8) + ((uint8_t)mpuData[9]);
+    accData[5] = (((int8_t)mpuData[10]) << 8) + ((uint8_t)mpuData[11]);
+
+/*
+    accData[0] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
+    accData[1] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
+    accData[2] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
+
+    accData[3] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
+    accData[4] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
+    accData[5] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
+*/
+
 /*
     accData[0] = (int16_t)((data[0] << 8) | data[1]);
     accData[1] = (int16_t)((data[2] << 8) | data[3]);
@@ -830,8 +875,7 @@ int main(void)
   int16_t std_y = 0;
   int16_t std_z = 0;
 
-	int16_t accData[3];
-	int16_t gyroData[3];
+	int16_t accData[6];
 
 	uint32_t buttonAccumulators[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 	uint32_t buttonState[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
@@ -960,11 +1004,20 @@ int main(void)
 		last_tick = HAL_GetTick();
 		ClearPixels();
 
-		readAcc(accData);
-		readGyro(gyroData);
-		char accDebugString[120];
-		sprintf(accDebugString, "acc x (% .6d) y (% .6d) z (% .6d) gyro x (% .6d) y (% .6d) z (% .6d)\r\n", accData[0], accData[1], accData[2], gyroData[0], gyroData[1], gyroData[2]);
-		serialSend(accDebugString);
+		uint16_t mpuInt = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2);
+		uint8_t mpuIntFlags = spiBusReadRegister(&hspi1, MPU_RA_INT_STATUS);
+		if(!mpuInt) {
+			serialSend("No MPU Int\r\n");
+		} else if(!mpuIntFlags) {
+			serialSend("No int status\r\n");
+		} else {
+			readAccAndGyro(accData);
+/*
+			char accDebugString[120];
+			sprintf(accDebugString, "acc x (% .6d) y (% .6d) z (% .6d) gyro x (% .6d) y (% .6d) z (% .6d)\r\n", accData[0], accData[1], accData[2], accData[3], accData[4], accData[5]);
+			serialSend(accDebugString);
+*/
+		}
 
 		uint32_t batteryAdcAccumulator = 0;
 		for(uint32_t adcValueIndex = 0; adcValueIndex < batteryAdcValuesSize; adcValueIndex++) {
@@ -1061,7 +1114,7 @@ int main(void)
 		} else if(gameMode == MODE_PLASMA) {
 			plasma(0b1);
 		} else if(gameMode == MODE_EYE) {
-			eye(0b1111, startPressed);
+			eye(0b1111, startPressed, accData);
 		} else if(gameMode == MODE_DEBUG) {
 			debug(buttonState, buttonAccumulators, 0b111, batteryAdcAverage, batteryVoltage100, startPressed);
 		}
