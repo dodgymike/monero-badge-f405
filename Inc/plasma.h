@@ -8,6 +8,6 @@
 #include <string.h>
 
 
-void plasma(uint32_t brightness);
+void plasma(uint32_t brightness, int16_t* accData);
 
 #endif

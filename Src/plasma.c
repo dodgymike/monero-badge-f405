@@ -1,4 +1,6 @@
 #include "plasma.h"
+#include "servo.h"
+#include "slave.h"
 
 float dist(float a, float b, float c, float d) {
 	return sqrt(((a - c) * (a - c) + (b - d) * (b - d)));
@@ -30,10 +32,14 @@ float lookupSin(float angle, float sinLookupTable[628]) {
 }
 */
 
-uint32_t timeCounter = 0;
-void plasma(uint32_t brightness) {
-	if(timeCounter == 0) {
-		timeCounter = HAL_GetTick();
+uint32_t timeCounterX = 0;
+uint32_t timeCounterY = 0;
+uint32_t frameCounter = 0;
+uint32_t frameBuffer[24*24];
+void plasma(uint32_t brightness, int16_t* accData) {
+	if(timeCounterX == 0) {
+		timeCounterX = HAL_GetTick();
+		timeCounterY = HAL_GetTick();
 	}
 
 	uint8_t screenHeight = 24;
@@ -42,15 +48,45 @@ void plasma(uint32_t brightness) {
 	//float time = HAL_GetTick() % 1000;
 	//float time = 20;
 	//float time = HAL_GetTick();
-	timeCounter += 3;
-	float time = timeCounter;
+	//timeCounter += 3;
 
-	if(timeCounter % 3 == 0) {
+        int16_t accX = accData[1];
+        int16_t accZ = -accData[2];
+
+/*
+        uint16_t timeX = -(accX / 400);
+        uint16_t timeY = -(accZ / 400);
+	timeX = timeX * timeX;
+	timeY = timeY * timeY;
+	timeCounter += sqrt(timeX + timeY);
+*/
+	int16_t timeCounterIncrementX = (accX / 1200);
+	int16_t timeCounterIncrementY = (accZ / 600);
+	/*
+	if(timeCounterIncrement > 3) {
+		timeCounterIncrement = 3;
+	}
+	*/
+	timeCounterX += timeCounterIncrementX;
+	timeCounterY += timeCounterIncrementY;
+	//timeCounter += 3;
+	frameCounter++;
+
+	float timeX = timeCounterX;
+	float timeY = timeCounterY;
+
+	if(frameCounter % 3 == 0) {
+		if(slaveModeEnabled()) {
+			user_pwm_setvalue(calculateServoAnglePwm(89));
+		} else {
+			user_pwm_setvalue(calculateServoAnglePwm(-89));
+		}
+
 		for(int y = 0; y < screenHeight; y++) {
 			for(int x = 0; x < screenWidth; x++) {
-				float value = sin(dist(x + time, y, 128.0, 128.0) / 8.0)
+				float value = sin(dist(x + timeX, y, 128.0, 128.0) / 8.0)
 					+ sin(dist(x, y, 64.0, 64.0) / 8.0)
-					+ sin(dist(x, y + time / 7, 192.0, 64) / 7.0)
+					+ sin(dist(x, y + timeY / 7, 192.0, 64) / 7.0)
 					+ sin(dist(x, y, 192.0, 100.0) / 8.0);
 				int colour = (4 + value) * 32;
 	
@@ -58,7 +94,7 @@ void plasma(uint32_t brightness) {
 				uint8_t g = colour * 2;
 				uint8_t b = 64 - colour;
 	
-				setPixel(x, y, brightness, r, g, b);
+				frameBuffer[(x*24)+y] = (r << 16) + (g << 8) + b;
 	
 				/*
 				uint8_t debugText[100];
@@ -67,6 +103,12 @@ void plasma(uint32_t brightness) {
 				*/
 	
 			}
+		}
+	}
+
+	for(int y = 0; y < screenHeight; y++) {
+		for(int x = 0; x < screenWidth; x++) {
+			setPixelColour(x, y, brightness, frameBuffer[(x*24)+y]);
 		}
 	}
 }

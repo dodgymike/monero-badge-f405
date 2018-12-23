@@ -60,6 +60,8 @@
 #include "buttons.h"
 #include "led_panel.h"
 #include "blockchain.h"
+#include "servo.h"
+#include "slave.h"
 
 /* USER CODE END Includes */
 
@@ -108,6 +110,39 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 #define MODE_WELCOME     0b0000000001000000
 #define MODE_BLOCKCHAIN  0b0000000010000000
 #define MODE_PLASMA      0b0000000100000000
+
+#define SLAVE_MODE_RAIN		0
+#define SLAVE_MODE_SNAKE	1
+#define SLAVE_MODE_BLIND	2
+#define SLAVE_MODE_RANDOM	3
+#define SLAVE_MODE_EYE		4
+#define SLAVE_MODE_WELCOME	5
+#define SLAVE_MODE_BLOCKCHAIN	6
+#define SLAVE_MODE_PLASMA	7
+
+#define PWM_TOP 2001
+#define PWM_BOTTOM 550
+#define PWM_RANGE (PWM_TOP - PWM_BOTTOM)
+#define PWM_RANGE_MIDPOINT (PWM_RANGE / 2.0)
+const float degreesPerPwm = PWM_RANGE / 180;
+
+uint8_t slaveModeEnabled() {
+	return !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_3);
+}
+
+void setSlaveMode(uint8_t slaveMode) {
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // SET OTHER BADGE TO SLAVE
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, (slaveMode & (1 << 2)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, (slaveMode & (1 << 1)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, (slaveMode & (1 << 0)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+uint16_t calculateServoAnglePwm(float angle) {
+	angle += 90;
+	uint16_t servoPwm = PWM_BOTTOM + (angle * degreesPerPwm);
+
+	return servoPwm;
+}
 
 uint8_t buttonPressed(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t button, uint32_t* lastButtonPressTick) {
 	uint8_t buttonPressed = 0;
@@ -911,13 +946,11 @@ int main(void)
 		serialSend("DONE\r\n");
 	}
 
-	uint16_t servoPosition = 1501;
-	uint16_t servoIncrement = 10;
-
 	//HAL_TIM_Base_Start(&htim3);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
 
   //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -1010,15 +1043,6 @@ int main(void)
 /*
 */
 	if(HAL_GetTick() - last_tick > 50) {
-		servoPosition += servoIncrement;
-		if(servoPosition >= 1960) {
-			servoIncrement = -10;
-		} else if(servoPosition <= 600) {
-			servoIncrement = 10;
-		}
-
-		user_pwm_setvalue(servoPosition);
-
 		last_tick = HAL_GetTick();
 		ClearPixels();
 
@@ -1079,37 +1103,79 @@ int main(void)
 		uint8_t selectPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT, &lastButtonPressTick);
 		uint8_t startPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_START, &lastButtonPressTick);
 
+		if(slaveModeEnabled()) {
+			uint8_t slaveModeBit0 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_0);
+			uint8_t slaveModeBit1 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_1);
+			uint8_t slaveModeBit2 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2);
+
+			uint8_t slaveMode = (slaveModeBit2 << 2) + (slaveModeBit1 << 1) + slaveModeBit0;
+			switch(slaveMode) {
+				case SLAVE_MODE_WELCOME:
+					gameMode = MODE_WELCOME;
+					break;
+				case SLAVE_MODE_EYE:
+					gameMode = MODE_EYE;
+					break;
+				case SLAVE_MODE_PLASMA:
+					gameMode = MODE_PLASMA;
+					break;
+				case SLAVE_MODE_BLIND:
+					gameMode = MODE_BLIND;
+					break;
+				case SLAVE_MODE_RANDOM:
+					gameMode = MODE_RANDOM;
+					break;
+				case SLAVE_MODE_RAIN:
+					gameMode = MODE_RAIN;
+					break;
+				case SLAVE_MODE_SNAKE:
+					gameMode = MODE_SNAKE;
+					break;
+				case SLAVE_MODE_BLOCKCHAIN:
+					gameMode = MODE_BLOCKCHAIN;
+					break;
+			}
+		}
+
 		if(selectPressed && startPressed) {
         		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
         		disablePower();
-		} else if(selectPressed) {
+		} else if(!slaveModeEnabled() && selectPressed) {
 			switch(gameMode) {
 				case MODE_WELCOME:
 					gameMode = MODE_RAIN;
+					setSlaveMode(SLAVE_MODE_RAIN);
 					break;
 				case MODE_RAIN:
 					gameMode = MODE_SNAKE;
+					setSlaveMode(SLAVE_MODE_SNAKE);
 					break;
 				case MODE_SNAKE:
 					gameMode = MODE_BLOCKCHAIN;
+					setSlaveMode(SLAVE_MODE_BLOCKCHAIN);
 					break;
 				case MODE_BLOCKCHAIN:
 					gameMode = MODE_EYE;
+					setSlaveMode(SLAVE_MODE_EYE);
 					break;
 				case MODE_EYE:
 					gameMode = MODE_PLASMA;
+					setSlaveMode(SLAVE_MODE_PLASMA);
 					break;
 				case MODE_PLASMA:
 					gameMode = MODE_BLIND;
+					setSlaveMode(SLAVE_MODE_BLIND);
 					break;
 				case MODE_BLIND:
 					gameMode = MODE_RANDOM;
+					setSlaveMode(SLAVE_MODE_RANDOM);
 					break;
 				case MODE_RANDOM:
 					gameMode = MODE_DEBUG;
 					break;
 				case MODE_DEBUG:
 					gameMode = MODE_WELCOME;
+					setSlaveMode(SLAVE_MODE_WELCOME);
 					break;
 			}
 		}
@@ -1130,7 +1196,7 @@ int main(void)
 		} else if(gameMode == MODE_SNAKE) {
 			snake(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick, startPressed);
 		} else if(gameMode == MODE_PLASMA) {
-			plasma(0b1);
+			plasma(0b1, accData);
 		} else if(gameMode == MODE_EYE) {
 			eye(0b1111, startPressed, accData);
 		} else if(gameMode == MODE_DEBUG) {
@@ -1429,10 +1495,11 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3|GPIO_PIN_10, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, BATT_BUCK_ENABLE_Pin|GPIO_PIN_3|GPIO_PIN_4, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, BATT_BUCK_ENABLE_Pin|GPIO_PIN_3|GPIO_PIN_4, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, MODE0_OUT_Pin|MODE1_OUT_Pin|MODE2_OUT_Pin|MODE3_OUT_Pin 
+                          |GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
@@ -1440,11 +1507,10 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_POWER_ENABLE_GPIO_Port, LED_POWER_ENABLE_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pin : PC3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pins : MODE0_IN_Pin MODE1_IN_Pin MODE2_IN_Pin SLAVE_MODE_Pin */
+  GPIO_InitStruct.Pin = MODE0_IN_Pin|MODE1_IN_Pin|MODE2_IN_Pin|SLAVE_MODE_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : BATT_BUCK_ENABLE_Pin */
@@ -1460,6 +1526,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : MODE0_OUT_Pin MODE1_OUT_Pin MODE2_OUT_Pin MODE3_OUT_Pin */
+  GPIO_InitStruct.Pin = MODE0_OUT_Pin|MODE1_OUT_Pin|MODE2_OUT_Pin|MODE3_OUT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB0 PB11 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_11;

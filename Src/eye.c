@@ -2,6 +2,7 @@
 
 #include "buttons.h"
 #include "led_panel.h"
+#include "servo.h"
 
 struct EyeGame* eyeGame = NULL;
 uint8_t eyeballPixelMap[24*24];
@@ -104,21 +105,8 @@ void eye(uint32_t brightness, uint32_t startButtonPressed, int16_t* accData) {
         int16_t xDiff = eyeGame->destinationX - eyeGame->currentX;
 	int16_t yDiff = eyeGame->destinationY - eyeGame->currentY;
 
-	if(xDiff > 0) {
-		eyeGame->rateX = 10;
-	} else if(xDiff == 0) {
-		eyeGame->rateX = 0;
-	} else {
-		eyeGame->rateX = -10;
-	}
-	
-	if(yDiff > 1) {
-		eyeGame->rateY = 10;
-	} else if(abs(yDiff) <= 1) {
-		eyeGame->rateY = 0;
-	} else {
-		eyeGame->rateY = -10;
-	}
+	eyeGame->rateX = xDiff / 8;
+	eyeGame->rateY = yDiff / 8;
 	
 	if((eyeGame->currentX == eyeGame->destinationX) && (eyeGame->currentY == eyeGame->destinationY)) {
 		//eyeGame->destinationX = 10 * ((rand() % 16) - 8);
@@ -129,5 +117,7 @@ void eye(uint32_t brightness, uint32_t startButtonPressed, int16_t* accData) {
 		//eyeGame->dilation = 3;
 
 	}
+
+	user_pwm_setvalue(calculateServoAnglePwm(eyeGame->currentX));
 }
 

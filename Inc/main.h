@@ -58,8 +58,24 @@
 
 /* Private define ------------------------------------------------------------*/
 
+#define MODE0_IN_Pin GPIO_PIN_0
+#define MODE0_IN_GPIO_Port GPIOC
+#define MODE1_IN_Pin GPIO_PIN_1
+#define MODE1_IN_GPIO_Port GPIOC
+#define MODE2_IN_Pin GPIO_PIN_2
+#define MODE2_IN_GPIO_Port GPIOC
+#define SLAVE_MODE_Pin GPIO_PIN_3
+#define SLAVE_MODE_GPIO_Port GPIOC
 #define BATT_BUCK_ENABLE_Pin GPIO_PIN_1
 #define BATT_BUCK_ENABLE_GPIO_Port GPIOA
+#define MODE0_OUT_Pin GPIO_PIN_4
+#define MODE0_OUT_GPIO_Port GPIOC
+#define MODE1_OUT_Pin GPIO_PIN_5
+#define MODE1_OUT_GPIO_Port GPIOC
+#define MODE2_OUT_Pin GPIO_PIN_6
+#define MODE2_OUT_GPIO_Port GPIOC
+#define MODE3_OUT_Pin GPIO_PIN_7
+#define MODE3_OUT_GPIO_Port GPIOC
 #define LED_POWER_ENABLE_Pin GPIO_PIN_15
 #define LED_POWER_ENABLE_GPIO_Port GPIOA
 
