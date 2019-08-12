@@ -141,6 +141,13 @@ uint16_t calculateServoAnglePwm(float angle) {
 	angle += 90;
 	uint16_t servoPwm = PWM_BOTTOM + (angle * degreesPerPwm);
 
+	if(servoPwm > PWM_TOP) {
+		servoPwm = PWM_TOP;
+	}
+	if(servoPwm < PWM_BOTTOM) {
+		servoPwm = PWM_BOTTOM;
+	}
+
 	return servoPwm;
 }
 

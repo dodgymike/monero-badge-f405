@@ -113,11 +113,15 @@ void eye(uint32_t brightness, uint32_t startButtonPressed, int16_t* accData) {
 		//eyeGame->destinationY = 10 * ((rand() % 16) - 8);
 
 
-		eyeGame->dilation = (rand() % 3) + 1;
+		eyeGame->dilation = (rand() % 2) + 1;
 		//eyeGame->dilation = 3;
 
 	}
 
-	user_pwm_setvalue(calculateServoAnglePwm(eyeGame->currentX));
+	uint16_t servoAngle = eyeGame->currentX;
+	if(!slaveModeEnabled()) {
+		servoAngle += 45;
+	}
+	user_pwm_setvalue(calculateServoAnglePwm(servoAngle));
 }
 
