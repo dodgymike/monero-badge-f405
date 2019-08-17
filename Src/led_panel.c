@@ -58,7 +58,7 @@ void WriteLedPanelFrame(uint8_t ledPanelEnabled)
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 
-        HAL_SPI_Transmit(&hspi2, start_frame_data, led_frame_size * 2, HAL_MAX_DELAY);
+        //HAL_SPI_Transmit(&hspi2, start_frame_data, led_frame_size * 2, HAL_MAX_DELAY);
 
 	uint8_t off_led_data[] = {
 		//0x00000111, 0x00, 0x00, 0x00
@@ -91,16 +91,16 @@ void WriteLedPanelFrame(uint8_t ledPanelEnabled)
 				//brightness, 0x05, 0x05, 0x05
 				brightness, blue, green, red
 			};
-			HAL_SPI_Transmit(&hspi2, led_data, led_frame_size, HAL_MAX_DELAY);
+//			HAL_SPI_Transmit(&hspi2, led_data, led_frame_size, HAL_MAX_DELAY);
 		} else {
-			HAL_SPI_Transmit(&hspi2, off_led_data, led_frame_size, HAL_MAX_DELAY);
+//			HAL_SPI_Transmit(&hspi2, off_led_data, led_frame_size, HAL_MAX_DELAY);
 		}
 	}
 
 	// BUG for final pixel randomness?
-	HAL_SPI_Transmit(&hspi2, off_led_data, led_frame_size, HAL_MAX_DELAY);
+//	HAL_SPI_Transmit(&hspi2, off_led_data, led_frame_size, HAL_MAX_DELAY);
 
-        HAL_SPI_Transmit(&hspi2, end_frame_data, led_frame_size * 8, HAL_MAX_DELAY);
+ //       HAL_SPI_Transmit(&hspi2, end_frame_data, led_frame_size * 8, HAL_MAX_DELAY);
 
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 

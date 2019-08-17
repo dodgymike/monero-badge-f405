@@ -20,8 +20,6 @@ void ClearPixels();
 void WriteLedPanelFrame(uint8_t ledPanelEnabled);
 uint16_t xyToLedIndex(uint8_t x, uint8_t y);
 
-extern SPI_HandleTypeDef hspi2;
-
 void drawText(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t length);
 void drawTextColour(uint8_t brightness, uint8_t x, uint8_t y, char text[], uint8_t length, uint8_t r, uint8_t g, uint8_t b);
 

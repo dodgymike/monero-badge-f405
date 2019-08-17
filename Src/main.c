@@ -1,56 +1,27 @@
-
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : main.c
   * @brief          : Main program body
   ******************************************************************************
-  * This notice applies to any and all portions of this file
-  * that are not between comment pairs USER CODE BEGIN and
-  * USER CODE END. Other portions of this file, whether 
-  * inserted by the user or by software development tools
-  * are owned by their respective copyright owners.
+  * @attention
   *
-  * Copyright (c) 2018 STMicroelectronics International N.V. 
-  * All rights reserved.
+  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
+  * All rights reserved.</center></h2>
   *
-  * Redistribution and use in source and binary forms, with or without 
-  * modification, are permitted, provided that the following conditions are met:
-  *
-  * 1. Redistribution of source code must retain the above copyright notice, 
-  *    this list of conditions and the following disclaimer.
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  * 3. Neither the name of STMicroelectronics nor the names of other 
-  *    contributors to this software may be used to endorse or promote products 
-  *    derived from this software without specific written permission.
-  * 4. This software, including modifications and/or derivative works of this 
-  *    software, must execute solely and exclusively on microcontroller or
-  *    microprocessor devices manufactured by or for STMicroelectronics.
-  * 5. Redistribution and use of this software other than as permitted under 
-  *    this license is void and will automatically terminate your rights under 
-  *    this license. 
-  *
-  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
-  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
-  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
-  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
-  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
-  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
-  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * This software component is licensed by ST under BSD 3-Clause license,
+  * the "License"; You may not use this file except in compliance with the
+  * License. You may obtain a copy of the License at:
+  *                        opensource.org/licenses/BSD-3-Clause
   *
   ******************************************************************************
   */
+/* USER CODE END Header */
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stm32f4xx_hal.h"
-#include "usb_device.h"
 
+/* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <math.h>
 #include <stdlib.h>
@@ -65,14 +36,23 @@
 
 /* USER CODE END Includes */
 
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
+
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
-
-SPI_HandleTypeDef hspi1;
-SPI_HandleTypeDef hspi2;
-
-TIM_HandleTypeDef htim3;
-TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -84,21 +64,13 @@ static GPIO_InitTypeDef  GPIO_InitStruct;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_SPI2_Init(void);
-static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_TIM4_Init(void);
-static void MX_TIM3_Init(void);
-
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-                                
-                                
-
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
 /* USER CODE END PFP */
 
+/* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
 #define MODE_RAIN        0b0000000000000001
@@ -273,12 +245,13 @@ void calculateStdDevs(uint8_t bufferSize, uint16_t* mean_x, uint16_t* mean_y, ui
 }
 
 void serialSend(uint8_t* buffer) {
-	CDC_Transmit_FS(buffer, strlen(buffer));
+	//CDC_Transmit_FS(buffer, strlen(buffer));
         //HAL_UART_Receive(&huart2, buffer, sizeof(buffer), HAL_MAX_DELAY);
         //HAL_UART_Transmit(&huart6, buffer, 2, HAL_MAX_DELAY);
 //        HAL_UART_Transmit(&huart3, buffer, strlen(buffer), HAL_MAX_DELAY);
 }
 
+/*
 uint8_t spiBusReadRegister(SPI_HandleTypeDef* spi, uint8_t mpuRegister) {
 	uint8_t registerWithFlag = 0b10000000 | mpuRegister;
 	uint8_t rxBuffer[20];
@@ -311,12 +284,14 @@ uint8_t spiBusReadRegisterBuffer(SPI_HandleTypeDef* spi, uint8_t mpuRegister, ui
 
 	return rxBuffer[0];
 }
+*/
 
 /*
 157     spiTransferByte(bus->busdev_u.spi.instance, reg | 0x80); // read transaction
 158     spiTransfer(bus->busdev_u.spi.instance, NULL, data, length);
 */
 
+/*
 uint8_t spiBusWriteRegister(SPI_HandleTypeDef* spi, uint8_t mpuRegister, uint8_t value) {
 	uint8_t writeBuffer[2] = { 0b00000000 | mpuRegister, value };
 
@@ -326,10 +301,12 @@ uint8_t spiBusWriteRegister(SPI_HandleTypeDef* spi, uint8_t mpuRegister, uint8_t
 
 	return 0;
 }
+*/
 
+/*
 uint8_t initMPU6000() {
 	serialSend("Initialising MPU6000");
-	spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_1, BIT_H_RESET);
+	//spiBusWriteRegister(&hspi1, MPU_RA_PWR_MGMT_1, BIT_H_RESET);
         HAL_Delay(200);
 
 	uint8_t debugBuffer[100];
@@ -447,41 +424,17 @@ uint8_t initMPU6000() {
 
     return productID;
 }
+*/
 
+/*
 void readAccAndGyro(int16_t* accData)
 {
 //    int16_t data[6];
 
-/*
-    uint16_t x_h = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_XOUT_H);
-    uint16_t x_l = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_XOUT_L);
-    uint16_t y_h = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_YOUT_H);
-    uint16_t y_l = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_YOUT_L);
-    uint16_t z_h = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_ZOUT_H);
-    uint16_t z_l = spiBusReadRegister(&hspi1, MPU_RA_ACCEL_ZOUT_L);
-
-    accData[0] = (int16_t)((x_h << 8) | x_l);
-    accData[1] = (int16_t)((y_h << 8) | y_l);
-    accData[2] = (int16_t)((z_h << 8) | z_l);
-*/
-
     uint8_t mpuData[12];
     bzero(mpuData, 12);
 
-    spiBusReadRegisterBuffer(&hspi1, MPU_RA_ACCEL_XOUT_H, mpuData, 12);
-
-/*
-	uint16_t mpuDebugDataIndex = 0;
-	char accDebugString[120];
-	sprintf(accDebugString, "% .6d,% .6d:% .6d,% .6d:% .6d,% .6d:% .6d,% .6d:% .6d,% .6d:% .6d,% .6d\r\n", ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]), ((uint8_t)mpuData[mpuDebugDataIndex++]));
-	serialSend(accDebugString);
-*/
-
-/*
-    if(!mpuData[0]) {
-	return;
-    }
-*/
+    //spiBusReadRegisterBuffer(&hspi1, MPU_RA_ACCEL_XOUT_H, mpuData, 12);
 
     uint8_t mpuDataIndex = 0;
     accData[0] = (((int8_t)mpuData[0]) << 8) + ((uint8_t)mpuData[1]);
@@ -492,41 +445,8 @@ void readAccAndGyro(int16_t* accData)
     accData[4] = (((int8_t)mpuData[8]) << 8) + ((uint8_t)mpuData[9]);
     accData[5] = (((int8_t)mpuData[10]) << 8) + ((uint8_t)mpuData[11]);
 
-/*
-    accData[0] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
-    accData[1] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
-    accData[2] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
-
-    accData[3] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
-    accData[4] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
-    accData[5] = (int16_t)((mpuData[mpuDataIndex++] << 8) | mpuData[mpuDataIndex++]);
-*/
-
-/*
-    accData[0] = (int16_t)((data[0] << 8) | data[1]);
-    accData[1] = (int16_t)((data[2] << 8) | data[3]);
-    accData[2] = (int16_t)((data[4] << 8) | data[5]);
-*/
-
-/*
-    const bool ack = busReadRegisterBuffer(&acc->bus, MPU_RA_ACCEL_XOUT_H, data, 6); 
-    if (!ack) {
-        return false;
-    }   
-*/
-
-/*
-    if(accData[0] & 0xf000) {
-	accData[0] *= -1;
-    }
-    if(accData[1] & 0xf000) {
-	accData[1] *= -1;
-    }
-    if(accData[2] & 0xf000) {
-	accData[2] *= -1;
-    }
-*/
 }
+*/
 
 struct Particle {
 	uint8_t x;
@@ -572,93 +492,6 @@ uint32_t rainGreen = 0b11111;
 uint32_t rainBlue = 0b11111;
 
 void rain(int xAcc, int yAcc, uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t* lastButtonPressTick, uint32_t startButtonPressed) {
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L1, lastButtonPressTick)) {
-		if(rainBrightness > 0) {
-			rainBrightness--;
-		}
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L3, lastButtonPressTick)) {
-		if(rainBrightness < 0b00011111) {
-			rainBrightness++;
-		}
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L4, lastButtonPressTick)) {
-		if(rainRed > 0) {
-			rainRed--;
-		}
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_L2, lastButtonPressTick)) {
-		if(rainRed < 254) {
-			rainRed++;
-		}
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R4, lastButtonPressTick)) {
-		if(rainGreen > 0) {
-			rainGreen--;
-		}
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R2, lastButtonPressTick)) {
-		if(rainGreen < 254) {
-			rainGreen++;
-		}
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R1, lastButtonPressTick)) {
-		if(rainBlue > 0) {
-			rainBlue--;
-		}
-	}
-	if(buttonPressed(buttonState, buttonAccumulators, BUTTON_R3, &lastButtonPressTick)) {
-		if(rainBlue < 254) {
-			rainBlue++;
-		}
-	}
-
-	int makeNewParticle = rand();
-	if(makeNewParticle > RAND_MAX / 4) {
-		for(int i = 0; i < maxParticles; i++) {
-			if(particles[i] == NULL) {
-				particles[i] = malloc(sizeof(struct Particle));
-				particles[i]->x = rand() % 24;
-				if(xAcc >= 0) {
-					particles[i]->y = 0;
-				} else {
-					particles[i]->y = 24;
-				}
-
-				break;
-			}
-		}
-	}
-
-	//uint32_t rainColour = rgbToPixel(rainBrightness, rainRed, rainGreen, rainBlue);
-
-	for(int i = 0; i < maxParticles; i++) {
-		if(particles[i] != NULL) {
-			setPixel(particles[i]->x, particles[i]->y, rainBrightness, rainRed, rainGreen, rainBlue);
-
-			if(xAcc >= 0) {
-				particles[i]->y++;
-			} else {
-				particles[i]->y--;
-			}
-
-			if((particles[i]->y >= 24) || (particles[i]->y <= 0)) {
-				free(particles[i]);
-				particles[i] = NULL;
-			}
-		}
-	}
-
-	// DEBUG
-	for(int bitIndex = 0; bitIndex < 8; bitIndex++) {
-		uint32_t rainBrightnessLedLevel = ((rainBrightness >> bitIndex) & 1) ? 0b00001000 : 0;
-
-		setPixel(bitIndex, 0, rainBrightness, ((rainBlue >> bitIndex) & 1) ? 0b00001000 : 0, 0, 0);
-		setPixel(bitIndex, 1, rainBrightness, 0, ((rainGreen >> bitIndex) & 1) ? 0b00001000 : 0, 0);
-		setPixel(bitIndex, 2, rainBrightness, 0, 0, ((rainRed >> bitIndex) & 1) ? 0b00001000 : 0);
-		setPixel(bitIndex, 3, rainBrightness, rainBrightnessLedLevel, rainBrightnessLedLevel, rainBrightnessLedLevel);
-	}
-	// /DEBUG
 }
 
 void binToHex(uint8_t in[], uint8_t out[], uint8_t byteCount) {
@@ -794,12 +627,117 @@ void disablePower() {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
 }
 
+/*
+void byteToBits(uint8_t bits[8], uint8_t byte) {
+	for(int i = 0; i < 8; i++) {
+		bits[i] = ((0x01 << (8 - i - 1)) & byte);
+	}
+}
+void byteToBits(uint8_t bits[8], uint8_t byte) {
+	for(int i = 0; i < 8; i++) {
+		bits[i] = ((0x01 << (i)) & byte);
+	}
+}
+*/
+void byteToBits(uint8_t bits[8], uint8_t byte);
+void writeLCDDataByte(uint8_t dataByte, uint32_t delay);
+void writeLCDData2Byte(uint8_t dataByte, uint32_t delay);
+void writeLCDCommand(uint8_t command, uint32_t delay);
+void writeLCDData(uint8_t dataBits[], uint32_t count, uint32_t delay);
+
+void byteToBits(uint8_t bits[8], uint8_t byte) {
+	bits[0] = byte & 0x80;
+	bits[1] = byte & 0x40;
+	bits[2] = byte & 0x20;
+	bits[3] = byte & 0x10;
+	bits[4] = byte & 0x08;
+	bits[5] = byte & 0x04;
+	bits[6] = byte & 0x02;
+	bits[7] = byte & 0x01;
+}
+
+void writeLCDDataByte(uint8_t dataByte, uint32_t delay) {
+	uint8_t dataBits[8];
+	byteToBits(dataBits, dataByte);
+
+	writeLCDData(dataBits, 8, delay);
+}
+
+/*
+*/
+void writeLCDData2Byte(uint8_t dataByte, uint32_t delay) {
+	uint8_t dataBits[8];
+	byteToBits(dataBits, ((uint8_t)((dataByte >> 8) & 0xff)));
+
+	writeLCDData(dataBits, 8, delay);
+
+	byteToBits(dataBits, ((uint8_t)(dataByte & 0xff)));
+
+	writeLCDData(dataBits, 8, delay);
+}
+
+/*
+void writeLCDData2Byte(uint8_t dataByte, uint32_t delay) {
+	uint8_t dataBits[8];
+	byteToBits(dataBits, ((uint8_t)(dataByte & 0xff)));
+
+	writeLCDData(dataBits, 8, delay);
+
+	byteToBits(dataBits, ((uint8_t)((dataByte >> 8) & 0xff)));
+
+	writeLCDData(dataBits, 8, delay);
+}
+*/
+
+void writeLCDCommand(uint8_t command, uint32_t delay) {
+	uint8_t commandBits[8];
+	byteToBits(commandBits, command);
+
+	// Write command
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
+
+	for(int i = 0; i < 8; i++) {
+		for(int j = 0; j < delay/2; j++) { asm("NOP");}
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, commandBits[i] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+		for(int j = 0; j < delay/2; j++) { asm("NOP");}
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_SET);
+
+		for(int j = 0; j < delay; j++) { asm("NOP");}
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_RESET);
+	}
+
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_SET);   // DC
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
+}
+
+void writeLCDData(uint8_t dataBits[], uint32_t count, uint32_t delay) {
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_SET);   // DC
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
+
+	for(int i = 0; i < count; i++) {
+		for(int j = 0; j < delay/2; j++) { asm("NOP");}
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, dataBits[i] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+		for(int j = 0; j < delay/2; j++) { asm("NOP");}
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_SET);
+
+		for(int j = 0; j < delay; j++) { asm("NOP");}
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_RESET);
+	}
+
+	// reset all
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
+}
+
 /* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
-  *
-  * @retval None
+  * @retval int
   */
 int main(void)
 {
@@ -831,8 +769,9 @@ int main(void)
 
 
   /* USER CODE END 1 */
+  
 
-  /* MCU Configuration----------------------------------------------------------*/
+  /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
@@ -868,95 +807,72 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_SPI2_Init();
-  MX_SPI1_Init();
   MX_ADC1_Init();
-  MX_USB_DEVICE_Init();
-  MX_TIM4_Init();
-  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+#define ST7735_TFTWIDTH_128   128 // for 1.44 and mini
+#define ST7735_TFTWIDTH_80     80 // for mini
+#define ST7735_TFTHEIGHT_128  128 // for 1.44" display
+#define ST7735_TFTHEIGHT_160  160 // for 1.8" and mini display
 
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+#define ST_CMD_DELAY      0x80    // special signifier for command lists
 
-	uint32_t lowBatteryFlashCounter = 0;
-	uint8_t ledPanelEnabled = 0;
+#define ST77XX_NOP        0x00
+#define ST77XX_SWRESET    0x01
+#define ST77XX_RDDID      0x04
+#define ST77XX_RDDST      0x09
 
-	disablePower();
-	enablePower();
+#define ST77XX_SLPIN      0x10
+#define ST77XX_SLPOUT     0x11
+#define ST77XX_PTLON      0x12
+#define ST77XX_NORON      0x13
 
-/*
-	for(int i = 0; i < 5; i++) {
-        	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-	        HAL_Delay(500);
+#define ST77XX_INVOFF     0x20
+#define ST77XX_INVON      0x21
+#define ST77XX_DISPOFF    0x28
+#define ST77XX_DISPON     0x29
+#define ST77XX_CASET      0x2A
+#define ST77XX_RASET      0x2B
+#define ST77XX_RAMWR      0x2C
+#define ST77XX_RAMRD      0x2E
 
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+#define ST77XX_PTLAR      0x30
+#define ST77XX_COLMOD     0x3A
+#define ST77XX_MADCTL     0x36
+
+#define ST77XX_MADCTL_MY  0x80
+#define ST77XX_MADCTL_MX  0x40
+#define ST77XX_MADCTL_MV  0x20
+#define ST77XX_MADCTL_ML  0x10
+#define ST77XX_MADCTL_RGB 0x00
+
+#define ST77XX_RDID1      0xDA
+#define ST77XX_RDID2      0xDB
+#define ST77XX_RDID3      0xDC
+#define ST77XX_RDID4      0xDD
+
+// Some ready-made 16-bit ('565') color settings:
+#define	ST77XX_BLACK      0x0000
+#define ST77XX_WHITE      0xFFFF
+#define	ST77XX_RED        0xF800
+#define	ST77XX_GREEN      0x07E0
+#define	ST77XX_BLUE       0x001F
+#define ST77XX_CYAN       0x07FF
+#define ST77XX_MAGENTA    0xF81F
+#define ST77XX_YELLOW     0xFFE0
+#define	ST77XX_ORANGE     0xFC00
+  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7|GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_10|GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
+  	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6|GPIO_PIN_3|GPIO_PIN_5|GPIO_PIN_4|GPIO_PIN_10, GPIO_PIN_RESET);
+  	//HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+
+	for(int i = 0; i < 2; i++) {
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5|GPIO_PIN_8|GPIO_PIN_10|GPIO_PIN_2|GPIO_PIN_3, GPIO_PIN_RESET);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5|GPIO_PIN_8|GPIO_PIN_10|GPIO_PIN_2|GPIO_PIN_3, GPIO_PIN_SET);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
 		HAL_Delay(500);
 	}
-*/
-
-	HAL_ADC_Start(&hadc1);
-
-	uint8_t IRHello[] = "bobmonkey";
-	irTX(IRHello, strlen(IRHello));
-
-
-	uint32_t batteryAdcAverage = 0;
-	uint32_t batteryAdcValuesSize = 3000;
-	uint32_t batteryAdcValues[batteryAdcValuesSize];
-	uint32_t batteryAdcValuesIndex = 0;
-	uint64_t batteryAdcTotalSampleCount = 0;
-        uint32_t batteryVoltage100 = 0;
-	uint8_t lowBattery = 0;
-
-  int bufferSize = 40;
-  initAccRingBuffer(bufferSize);
-
-  int16_t mean_x = 1;
-  int16_t mean_y = 0;
-  int16_t mean_z = 0;
-
-  int16_t std_x = 0;
-  int16_t std_y = 0;
-  int16_t std_z = 0;
-
-	int16_t accData[6];
-
-	uint32_t buttonAccumulators[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
-	uint32_t buttonState[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
-	uint32_t lastButtonPressTick = HAL_GetTick();
-
-	uint16_t gameMode = MODE_WELCOME;
-
-	uint32_t last_tick = HAL_GetTick();
-	uint32_t buttonTicks = 0;
-
-	for(uint32_t i = 0; i < batteryAdcValuesSize; i++) {
-		batteryAdcValues[i] = 0;
-	}
-
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-
-	enableLedPanel(&ledPanelEnabled);
-
-	struct BlockchainGame blockchainGame;
-	initBlockchainGame(&blockchainGame);
-
-	if(1) {
-		HAL_Delay(2000);
-		serialSend("Initialising MPU6000: ");
-
-		uint8_t productID = 0;
-		while((productID = initMPU6000()) == 0) {}
-		serialSend("DONE\r\n");
-	}
-
-	//HAL_TIM_Base_Start(&htim3);
-	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
-
-  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 
   /* USER CODE END 2 */
 
@@ -964,295 +880,159 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-  /* USER CODE END WHILE */
+    /* USER CODE END WHILE */
 
-  /* USER CODE BEGIN 3 */
-	//serialSend("Loop\r\n");
+    /* USER CODE BEGIN 3 */
+
+	//for(int i = 0; i < 10000; i++) {
+	//}
+
+	// CLK  / = D11 PA7
+	// DC    = D10 PB6
+	// SDA00 = PA3
+	// SDA01 = PA2
+	// SDA02 = PA10
+	// SDA03 = PB3
+	// SDA04 = PB5
+	// SDA05 = PB4
+	// SDA06 = PB10
+	// SDA07 = PA8
+	// SDA08 = PA9
+	// SDA09 = PC7
+
+	//HAL_Delay(1);
 
 
+/*
+*/
 
+	uint32_t delay = 1000;
 	/*
-        calculateMeans(bufferSize, &mean_x, &mean_y, &mean_z);
-        calculateStdDevs(bufferSize, &mean_x, &mean_y, &mean_z, &std_x, &std_y, &std_z);
+	while(1) {
+		writeLCDCommand(ST77XX_NOP, delay);
+		writeLCDCommand(ST77XX_SWRESET, delay);
+	}
 	*/
 
+	HAL_Delay(5);
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+	HAL_Delay(5);
+
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 /*
-	if(accData[0] > (mean_x - std_x)) {
-		accRingBuffer->x = mean_x - std_x;
-	} else if(accData[0] < (mean_x + std_x)) {
-		accRingBuffer->x = mean_x + std_x;
-	} else {
-		accRingBuffer->x = accData[0];
+	for(int i = 0; i < 1000; i++) {
+		asm("NOP");
 	}
+*/
+	HAL_Delay(5);
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+	HAL_Delay(5);
+/*
+*/
 
-	if(accData[1] > (mean_y - std_y)) {
-		accRingBuffer->y = mean_y - std_y;
-	} else if(accData[1] < (mean_y + std_y)) {
-		accRingBuffer->y = mean_y + std_y;
-	} else {
-		accRingBuffer->y = accData[1];
-	}
-
-	if(accData[2] > (mean_z - std_z)) {
-		accRingBuffer->z = mean_z - std_z;
-	} else if(accData[2] < (mean_z + std_z)) {
-		accRingBuffer->z = mean_z + std_z;
-	} else {
-		accRingBuffer->z = accData[2];
+/*
+	for(int i = 0; i < 10; i++) {
+		writeLCDCommand(ST77XX_NOP, delay);
 	}
 */
 
 /*
-	if(std_x == 0) {
-		std_x = 3000;
-	}
-	if(std_y == 0) {
-		std_y = 3000;
-	}
-	if(std_z == 0) {
-		std_z = 3000;
-	}
+	HAL_Delay(150);
+	writeLCDCommand(ST77XX_SWRESET, delay);
+	HAL_Delay(150);
+		writeLCDCommand(ST77XX_NOP, delay);
 
-	if((accData[0] < (mean_x + std_x)) && ((accData[0] > (mean_x - std_x)))) {
-		accRingBuffer->x = accData[0];
-	} else {
-		accRingBuffer->x = accData[0] * 0.1;
-	}
-
-	if((accData[1] < (mean_y + std_y)) && ((accData[1] > (mean_y - std_y)))) {
-		accRingBuffer->y = accData[1];
-	} else {
-		accRingBuffer->y = accData[1] * 0.1;
-	}
-
-	if((accData[2] < (mean_z + std_z)) && ((accData[2] > (mean_z - std_z)))) {
-		accRingBuffer->z = accData[2];
-	} else {
-		accRingBuffer->z = accData[2] * 0.1;
-	}
-
-	moveToNextAccRingBufferEntry();
-
-        //removeOutliers(bufferSize, &mean_x, &mean_y, &mean_z, &std_x, &std_y, &std_z);
+	HAL_Delay(1000);
 */
 
-	//uint8_t accDebugString[60];
-	//sprintf(accDebugString, "x (%0.6d) y (%0.6d) z (%0.6d)\r\n", accData[0], accData[1], accData[2]);
-	//sprintf(accDebugString, "tick (%lu) x (%0.6d) y (%0.6d) z (%0.6d)\r\n", HAL_GetTick(), mean_x, mean_y, mean_z);
-	//serialSend(accDebugString);
+	HAL_Delay(500);
+	writeLCDCommand(ST77XX_SLPOUT, delay);
+	HAL_Delay(500);
+		writeLCDCommand(ST77XX_NOP, delay);
 
-	if(HAL_GetTick() - lastButtonPressTick > 1800000) {
-		disableLedPanel(&ledPanelEnabled);
-        	disablePower();
-	} else {
-		enableLedPanel(&ledPanelEnabled);
+	writeLCDCommand(ST77XX_NORON, delay);
+	//HAL_Delay(1);
+  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+	HAL_Delay(10);
+		writeLCDCommand(ST77XX_NOP, delay);
+
+	while(1) {
+		// DELAY
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+		HAL_Delay(100);
+			
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+		HAL_Delay(100);
 	}
+
+	writeLCDCommand(ST77XX_COLMOD, delay);
+	writeLCDDataByte(0x55, delay);
+  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+	HAL_Delay(10);
+
+	writeLCDCommand(ST77XX_MADCTL, delay);
+	//writeLCDDataByte(0x08);
+	writeLCDDataByte(0x00, delay);
+  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+	HAL_Delay(10);
+
+	writeLCDCommand(ST77XX_CASET, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0xF0, delay);
+	HAL_Delay(10);
+  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+
+	writeLCDCommand(ST77XX_RASET, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0xF0, delay);
+	HAL_Delay(10);
+  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+
+	writeLCDCommand(ST77XX_INVON, delay);
+	//HAL_Delay(1);
+  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+	HAL_Delay(10);
+
+	writeLCDCommand(ST77XX_NORON, delay);
+	//HAL_Delay(1);
+  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+	HAL_Delay(10);
+
+	writeLCDCommand(ST77XX_DISPON, delay);
+	//HAL_Delay(1);
+  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+	HAL_Delay(500);
+
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+		HAL_Delay(100);
+			
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+		HAL_Delay(100);
+
 /*
 */
-	if(HAL_GetTick() - last_tick > 50) {
-		last_tick = HAL_GetTick();
-		ClearPixels();
-
-		uint16_t mpuInt = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2);
-		uint8_t mpuIntFlags = spiBusReadRegister(&hspi1, MPU_RA_INT_STATUS);
-		if(!mpuInt) {
-			serialSend("No MPU Int\r\n");
-		} else if(!mpuIntFlags) {
-			serialSend("No int status\r\n");
-		} else {
-			readAccAndGyro(accData);
-/*
-			char accDebugString[120];
-			sprintf(accDebugString, "acc x (% .6d) y (% .6d) z (% .6d) gyro x (% .6d) y (% .6d) z (% .6d)\r\n", accData[0], accData[1], accData[2], accData[3], accData[4], accData[5]);
-			serialSend(accDebugString);
-*/
+		writeLCDCommand(ST77XX_RAMWR, delay);
+		for(int i = 0; i < 240*20; i++) {
+			writeLCDData2Byte(ST77XX_RED, delay);
+			writeLCDData2Byte(ST77XX_GREEN, delay);
+			writeLCDData2Byte(ST77XX_BLUE, delay);
 		}
+  		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
 
-		uint32_t batteryAdcAccumulator = 0;
-		for(uint32_t adcValueIndex = 0; adcValueIndex < batteryAdcValuesSize; adcValueIndex++) {
-			if(batteryAdcValues[adcValueIndex] > 4096) {
-				continue;
-			}
-			batteryAdcAccumulator += batteryAdcValues[adcValueIndex];
-		}
-		batteryAdcAverage = batteryAdcAccumulator / batteryAdcValuesSize;
-		if(batteryAdcAverage > 4096) {
-			batteryAdcAverage = 4096;
-		} 
-		//batteryVoltage100 = 2.2424 * batteryAdcAverage;
-		batteryVoltage100 = 0.2419354839 * batteryAdcAverage;
+		// DELAY
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+		HAL_Delay(100);
+			
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+		HAL_Delay(100);
 
-		if(batteryAdcTotalSampleCount > (batteryAdcValuesSize * 20)) { // wait for ADC low-pass to have enough samples during start-up
-			if(batteryVoltage100 <= 620) {
-				// SHUTDOWN TIME!
-				// NO FURTHER PROCESSING
-				disableLedPanel(&ledPanelEnabled);
-				disablePower();
-				while(1) {}
-/*
-*/
-				// NO FURTHER PROCESSING
-				// NO FURTHER PROCESSING
-			} else if(batteryVoltage100 < 630) {
-				// LOW POWER TIME!
-				lowBattery = 1;
-			}
-/*
-			 else if(batteryVoltage > 7.5) {
-				lowBattery = 0;
-				enablePower();
-				enableLedPanel(&ledPanelEnabled);
-			}
-*/
-		} 
-
-
-		uint8_t selectPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_SELECT, &lastButtonPressTick);
-		uint8_t startPressed = buttonPressed(buttonState, buttonAccumulators, BUTTON_START, &lastButtonPressTick);
-
-		if(slaveModeEnabled()) {
-			uint8_t slaveModeBit0 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_0);
-			uint8_t slaveModeBit1 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_1);
-			uint8_t slaveModeBit2 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2);
-
-			uint8_t slaveMode = (slaveModeBit2 << 2) + (slaveModeBit1 << 1) + slaveModeBit0;
-			switch(slaveMode) {
-				case SLAVE_MODE_WELCOME:
-					gameMode = MODE_WELCOME;
-					break;
-				case SLAVE_MODE_EYE:
-					gameMode = MODE_EYE;
-					break;
-				case SLAVE_MODE_PLASMA:
-					gameMode = MODE_PLASMA;
-					break;
-				case SLAVE_MODE_BLIND:
-					gameMode = MODE_BLIND;
-					break;
-				case SLAVE_MODE_RANDOM:
-					gameMode = MODE_RANDOM;
-					break;
-				case SLAVE_MODE_RAIN:
-					gameMode = MODE_RAIN;
-					break;
-				case SLAVE_MODE_SNAKE:
-					gameMode = MODE_SNAKE;
-					break;
-				case SLAVE_MODE_BLOCKCHAIN:
-					gameMode = MODE_BLOCKCHAIN;
-					break;
-			}
-		}
-
-		if(selectPressed && startPressed) {
-        		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
-        		disablePower();
-		} else if(!slaveModeEnabled() && selectPressed) {
-			switch(gameMode) {
-				case MODE_WELCOME:
-					gameMode = MODE_RAIN;
-					setSlaveMode(SLAVE_MODE_RAIN);
-					break;
-				case MODE_RAIN:
-					gameMode = MODE_SNAKE;
-					setSlaveMode(SLAVE_MODE_SNAKE);
-					break;
-				case MODE_SNAKE:
-					gameMode = MODE_BLOCKCHAIN;
-					setSlaveMode(SLAVE_MODE_BLOCKCHAIN);
-					break;
-				case MODE_BLOCKCHAIN:
-					gameMode = MODE_EYE;
-					setSlaveMode(SLAVE_MODE_EYE);
-					break;
-				case MODE_EYE:
-					gameMode = MODE_PLASMA;
-					setSlaveMode(SLAVE_MODE_PLASMA);
-					break;
-				case MODE_PLASMA:
-					gameMode = MODE_BLIND;
-					setSlaveMode(SLAVE_MODE_BLIND);
-					break;
-				case MODE_BLIND:
-					gameMode = MODE_RANDOM;
-					setSlaveMode(SLAVE_MODE_RANDOM);
-					break;
-				case MODE_RANDOM:
-					gameMode = MODE_DEBUG;
-					break;
-				case MODE_DEBUG:
-					gameMode = MODE_WELCOME;
-					setSlaveMode(SLAVE_MODE_WELCOME);
-					break;
-			}
-		}
-
-		if(lowBattery) {
-			lowBatteryScreen(0b111, &lowBatteryFlashCounter);
-		} else if(gameMode == MODE_WELCOME) {
-			//welcome(0b11111);
-			welcome(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick, startPressed);
-		} else if(gameMode == MODE_RAIN) {
-			rain(mean_x, mean_y, buttonState, buttonAccumulators, &lastButtonPressTick, startPressed);
-		} else if(gameMode == MODE_BLIND) {
-			blind(0b111, 0b11111, startPressed);
-		} else if(gameMode == MODE_RANDOM) {
-			random_pixels(0b111, startPressed);
-		} else if(gameMode == MODE_BLOCKCHAIN) {
-			blockchain(&blockchainGame, buttonState, buttonAccumulators, 0b111, &lastButtonPressTick, startPressed);
-		} else if(gameMode == MODE_SNAKE) {
-			snake(buttonState, buttonAccumulators, 0b111, &lastButtonPressTick, startPressed);
-		} else if(gameMode == MODE_PLASMA) {
-			plasma(0b1, accData);
-		} else if(gameMode == MODE_EYE) {
-			eye(0b1111, startPressed, accData);
-		} else if(gameMode == MODE_DEBUG) {
-			debug(buttonState, buttonAccumulators, 0b111, batteryAdcAverage, batteryVoltage100, startPressed);
-		}
-
-		WriteLedPanelFrame(ledPanelEnabled);
-	}
-
-	if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) {
-		batteryAdcValues[batteryAdcValuesIndex++] = HAL_ADC_GetValue(&hadc1);
-		if(batteryAdcValuesIndex >= batteryAdcValuesSize) {
-			batteryAdcValuesIndex = 0;
-		}
-
-		batteryAdcTotalSampleCount++;
-
-		HAL_ADC_Start(&hadc1);
-	}
-
-	uint16_t buttonBits = readButtons();
-	uint16_t populatedButtonBits = buttonBits & 0b0111111111100000;
-
-	for(int buttonIndex = 0; buttonIndex < 16; buttonIndex++) {
-		uint16_t buttonMask = (1 << buttonIndex);
-		uint16_t buttonState = populatedButtonBits & buttonMask;
-		if(buttonState) {
-			if((buttonIndex == BUTTON_SELECT) && (gameMode == MODE_PLASMA)) {
-				gameMode = MODE_BLIND;
-			}
-			buttonAccumulators[buttonIndex]++;
-		} else {
-			buttonAccumulators[buttonIndex]--;
-		}
-
-		if(buttonAccumulators[buttonIndex] <= 1) {
-			buttonAccumulators[buttonIndex] = 1;
-		} else if(buttonAccumulators[buttonIndex] > 512) {
-			buttonAccumulators[buttonIndex] = 512;
-		}
-	}
-
-/*
-	HAL_Delay(2000);
-*/
-
+	//while(1) {}
   }
   /* USER CODE END 3 */
-
 }
 
 /**
@@ -1261,67 +1041,64 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  RCC_OscInitTypeDef RCC_OscInitStruct;
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-
-    /**Configure the main internal regulator output voltage 
-    */
+  /** Configure the main internal regulator output voltage 
+  */
   __HAL_RCC_PWR_CLK_ENABLE();
-
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-    /**Initializes the CPU, AHB and APB busses clocks 
-    */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  /** Initializes the CPU, AHB and APB busses clocks 
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 13;
-  RCC_OscInitStruct.PLL.PLLN = 72;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN = 160;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 3;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    _Error_Handler(__FILE__, __LINE__);
+    Error_Handler();
   }
-
-    /**Initializes the CPU, AHB and APB busses clocks 
-    */
+  /** Initializes the CPU, AHB and APB busses clocks 
+  */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
-    _Error_Handler(__FILE__, __LINE__);
+    Error_Handler();
   }
-
-    /**Configure the Systick interrupt time 
-    */
-  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
-
-    /**Configure the Systick 
-    */
-  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
-  /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
-/* ADC1 init function */
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_ADC1_Init(void)
 {
 
-  ADC_ChannelConfTypeDef sConfig;
+  /* USER CODE BEGIN ADC1_Init 0 */
 
-    /**Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
-    */
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
+  */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
@@ -1334,166 +1111,31 @@ static void MX_ADC1_Init(void)
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
-    _Error_Handler(__FILE__, __LINE__);
+    Error_Handler();
   }
-
-    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
-    */
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+  */
   sConfig.Channel = ADC_CHANNEL_9;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
-    _Error_Handler(__FILE__, __LINE__);
+    Error_Handler();
   }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
 
 }
 
-/* SPI1 init function */
-static void MX_SPI1_Init(void)
-{
-
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
-  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-}
-
-/* SPI2 init function */
-static void MX_SPI2_Init(void)
-{
-
-  /* SPI2 parameter configuration*/
-  hspi2.Instance = SPI2;
-  hspi2.Init.Mode = SPI_MODE_MASTER;
-  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi2.Init.CLKPolarity = SPI_POLARITY_HIGH;
-  hspi2.Init.CLKPhase = SPI_PHASE_2EDGE;
-  hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi2.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi2) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-}
-
-/* TIM3 init function */
-static void MX_TIM3_Init(void)
-{
-
-  TIM_MasterConfigTypeDef sMasterConfig;
-  TIM_OC_InitTypeDef sConfigOC;
-
-  htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 72;
-  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 6000;
-  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 1501;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  HAL_TIM_MspPostInit(&htim3);
-
-}
-
-/* TIM4 init function */
-static void MX_TIM4_Init(void)
-{
-
-  TIM_ClockConfigTypeDef sClockSourceConfig;
-  TIM_MasterConfigTypeDef sMasterConfig;
-  TIM_OC_InitTypeDef sConfigOC;
-
-  htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 0;
-  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 0;
-  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  HAL_TIM_MspPostInit(&htim4);
-
-}
-
-/** Configure pins as 
-        * Analog 
-        * Input 
-        * Output
-        * EVENT_OUT
-        * EXTI
-*/
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_GPIO_Init(void)
 {
-
-  GPIO_InitTypeDef GPIO_InitStruct;
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
@@ -1502,81 +1144,85 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, BATT_BUCK_ENABLE_Pin|GPIO_PIN_3|GPIO_PIN_4, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4 
+                          |GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8 
+                          |GPIO_PIN_10|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, MODE0_OUT_Pin|MODE1_OUT_Pin|MODE2_OUT_Pin|MODE3_OUT_Pin 
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7 
                           |GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5 
+                          |GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED_POWER_ENABLE_GPIO_Port, LED_POWER_ENABLE_Pin, GPIO_PIN_SET);
-
-  /*Configure GPIO pins : MODE0_IN_Pin MODE1_IN_Pin MODE2_IN_Pin SLAVE_MODE_Pin */
-  GPIO_InitStruct.Pin = MODE0_IN_Pin|MODE1_IN_Pin|MODE2_IN_Pin|SLAVE_MODE_Pin;
+  /*Configure GPIO pins : PC0 PC1 PC2 PC3 
+                           PC11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
+                          |GPIO_PIN_11;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : BATT_BUCK_ENABLE_Pin */
-  GPIO_InitStruct.Pin = BATT_BUCK_ENABLE_Pin;
+  /*Configure GPIO pins : PA1 PA2 PA3 PA4 
+                           PA5 PA6 PA7 PA8 
+                           PA10 PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4 
+                          |GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8 
+                          |GPIO_PIN_10|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(BATT_BUCK_ENABLE_GPIO_Port, &GPIO_InitStruct);
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA3 PA4 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_4;
+  /*Configure GPIO pins : PC4 PC5 PC6 PC7 
+                           PC10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7 
+                          |GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB10 PB3 PB4 PB5 
+                           PB6 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5 
+                          |GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA13 PA14 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : MODE0_OUT_Pin MODE1_OUT_Pin MODE2_OUT_Pin MODE3_OUT_Pin */
-  GPIO_InitStruct.Pin = MODE0_OUT_Pin|MODE1_OUT_Pin|MODE2_OUT_Pin|MODE3_OUT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PB0 PB11 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_11;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PB10 PB4 PB5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_4|GPIO_PIN_5;
+  /*Configure GPIO pin : PB7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : LED_POWER_ENABLE_Pin */
-  GPIO_InitStruct.Pin = LED_POWER_ENABLE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LED_POWER_ENABLE_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PC10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PC11 */
-  GPIO_InitStruct.Pin = GPIO_PIN_11;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 }
 
 /* USER CODE BEGIN 4 */
+/*
 void user_pwm_setvalue(uint16_t value)
 {
     TIM_OC_InitTypeDef sConfigOC;
@@ -1587,15 +1233,14 @@ void user_pwm_setvalue(uint16_t value)
     HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);  
 }
+*/
 /* USER CODE END 4 */
 
 /**
   * @brief  This function is executed in case of error occurrence.
-  * @param  file: The file name as string.
-  * @param  line: The line in file as a number.
   * @retval None
   */
-void _Error_Handler(char *file, int line)
+void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
@@ -1613,7 +1258,7 @@ void _Error_Handler(char *file, int line)
   * @param  line: assert_param error line source number
   * @retval None
   */
-void assert_failed(uint8_t* file, uint32_t line)
+void assert_failed(uint8_t *file, uint32_t line)
 { 
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
@@ -1621,13 +1266,5 @@ void assert_failed(uint8_t* file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

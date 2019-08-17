@@ -122,6 +122,6 @@ void eye(uint32_t brightness, uint32_t startButtonPressed, int16_t* accData) {
 	if(!slaveModeEnabled()) {
 		servoAngle += 45;
 	}
-	user_pwm_setvalue(calculateServoAnglePwm(servoAngle));
+	//user_pwm_setvalue(calculateServoAnglePwm(servoAngle));
 }
 

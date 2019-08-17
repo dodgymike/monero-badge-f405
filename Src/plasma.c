@@ -77,9 +77,9 @@ void plasma(uint32_t brightness, int16_t* accData) {
 
 	if(frameCounter % 3 == 0) {
 		if(slaveModeEnabled()) {
-			user_pwm_setvalue(calculateServoAnglePwm(89));
+			//user_pwm_setvalue(calculateServoAnglePwm(89));
 		} else {
-			user_pwm_setvalue(calculateServoAnglePwm(-89));
+			//user_pwm_setvalue(calculateServoAnglePwm(-89));
 		}
 
 		for(int y = 0; y < screenHeight; y++) {
