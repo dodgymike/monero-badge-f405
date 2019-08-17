@@ -641,7 +641,7 @@ void byteToBits(uint8_t bits[8], uint8_t byte) {
 */
 void byteToBits(uint8_t bits[8], uint8_t byte);
 void writeLCDDataByte(uint8_t dataByte, uint32_t delay);
-void writeLCDData2Byte(uint8_t dataByte, uint32_t delay);
+void writeLCDData2Byte(uint16_t dataByte, uint32_t delay);
 void writeLCDCommand(uint8_t command, uint32_t delay);
 void writeLCDData(uint8_t dataBits[], uint32_t count, uint32_t delay);
 
@@ -654,6 +654,16 @@ void byteToBits(uint8_t bits[8], uint8_t byte) {
 	bits[5] = byte & 0x04;
 	bits[6] = byte & 0x02;
 	bits[7] = byte & 0x01;
+/*
+	bits[7] = byte & 0x80;
+	bits[6] = byte & 0x40;
+	bits[5] = byte & 0x20;
+	bits[4] = byte & 0x10;
+	bits[3] = byte & 0x08;
+	bits[2] = byte & 0x04;
+	bits[1] = byte & 0x02;
+	bits[0] = byte & 0x01;
+*/
 }
 
 void writeLCDDataByte(uint8_t dataByte, uint32_t delay) {
@@ -665,8 +675,23 @@ void writeLCDDataByte(uint8_t dataByte, uint32_t delay) {
 
 /*
 */
-void writeLCDData2Byte(uint8_t dataByte, uint32_t delay) {
+void writeLCDData2Byte(uint16_t dataByte, uint32_t delay) {
 	uint8_t dataBits[8];
+	byteToBits(dataBits, ((uint8_t)((dataByte >> 8) & 0xff)));
+
+	writeLCDData(dataBits, 8, delay);
+
+	byteToBits(dataBits, ((uint8_t)(dataByte & 0xff)));
+
+	writeLCDData(dataBits, 8, delay);
+}
+
+void writeLCDData3Byte(uint32_t dataByte, uint32_t delay) {
+	uint8_t dataBits[8];
+	byteToBits(dataBits, ((uint8_t)((dataByte >> 16) & 0xff)));
+
+	writeLCDData(dataBits, 8, delay);
+
 	byteToBits(dataBits, ((uint8_t)((dataByte >> 8) & 0xff)));
 
 	writeLCDData(dataBits, 8, delay);
@@ -693,6 +718,8 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
 	uint8_t commandBits[8];
 	byteToBits(commandBits, command);
 
+	//commandBits[0] = 
+
 	// Write command
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
@@ -704,7 +731,10 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
 		for(int j = 0; j < delay/2; j++) { asm("NOP");}
   		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_SET);
 
+
 		for(int j = 0; j < delay; j++) { asm("NOP");}
+
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
   		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_RESET);
 	}
 
@@ -725,6 +755,36 @@ void writeLCDData(uint8_t dataBits[], uint32_t count, uint32_t delay) {
   		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_SET);
 
 		for(int j = 0; j < delay; j++) { asm("NOP");}
+
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_RESET);
+	}
+
+	// reset all
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
+}
+
+
+void readLCDData(uint8_t dataBits[], uint32_t count, uint32_t delay) {
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_SET);   // DC
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
+
+  GPIO_InitStruct.Pin = GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	for(int i = 0; i < count; i++) {
+		for(int j = 0; j < delay/2; j++) { asm("NOP");}
+  //		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, dataBits[i] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+		for(int j = 0; j < delay/2; j++) { asm("NOP");}
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_SET);
+
+		for(int j = 0; j < delay; j++) { asm("NOP");}
+
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
   		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_RESET);
 	}
 
@@ -906,7 +966,7 @@ int main(void)
 /*
 */
 
-	uint32_t delay = 1000;
+	uint32_t delay = 1;
 	/*
 	while(1) {
 		writeLCDCommand(ST77XX_NOP, delay);
@@ -914,6 +974,9 @@ int main(void)
 	}
 	*/
 
+			
+/*
+*/
 	HAL_Delay(5);
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
 	HAL_Delay(5);
@@ -926,44 +989,41 @@ int main(void)
 */
 	HAL_Delay(5);
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-	HAL_Delay(5);
-/*
-*/
-
-/*
-	for(int i = 0; i < 10; i++) {
-		writeLCDCommand(ST77XX_NOP, delay);
-	}
-*/
-
-/*
+	//HAL_Delay(1000);
 	HAL_Delay(150);
+
 	writeLCDCommand(ST77XX_SWRESET, delay);
 	HAL_Delay(150);
-		writeLCDCommand(ST77XX_NOP, delay);
+//		writeLCDCommand(ST77XX_NOP, delay);
 
+/*
 	HAL_Delay(1000);
 */
 
 	HAL_Delay(500);
+	writeLCDCommand(ST77XX_SLPIN, delay);
+	HAL_Delay(500);
 	writeLCDCommand(ST77XX_SLPOUT, delay);
 	HAL_Delay(500);
+/*
 		writeLCDCommand(ST77XX_NOP, delay);
-
-	writeLCDCommand(ST77XX_NORON, delay);
-	//HAL_Delay(1);
-  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
-	HAL_Delay(10);
-		writeLCDCommand(ST77XX_NOP, delay);
-
+*/
 	while(1) {
 		// DELAY
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 		HAL_Delay(100);
-			
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
 		HAL_Delay(100);
 	}
+
+	writeLCDCommand(ST77XX_NORON, delay);
+
+	//HAL_Delay(1);
+  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+	HAL_Delay(10);
+//		writeLCDCommand(ST77XX_NOP, delay);
+
+	HAL_Delay(1000);
 
 	writeLCDCommand(ST77XX_COLMOD, delay);
 	writeLCDDataByte(0x55, delay);
@@ -1007,6 +1067,8 @@ int main(void)
   	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
 	HAL_Delay(500);
 
+	//continue;
+
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 		HAL_Delay(100);
 			
@@ -1014,12 +1076,28 @@ int main(void)
 		HAL_Delay(100);
 
 /*
+		while(1) {
+		writeLCDCommand(ST77XX_RDDID, delay);
+			uint8_t readBuffer[8];
+			readLCDData(readBuffer, 8, delay);
+			readLCDData(readBuffer, 8, delay);
+			readLCDData(readBuffer, 8, delay);
+			readLCDData(readBuffer, 8, delay);
+		}
 */
 		writeLCDCommand(ST77XX_RAMWR, delay);
-		for(int i = 0; i < 240*20; i++) {
-			writeLCDData2Byte(ST77XX_RED, delay);
-			writeLCDData2Byte(ST77XX_GREEN, delay);
-			writeLCDData2Byte(ST77XX_BLUE, delay);
+		for(int i = 0; i < 240*(240/3); i++) {
+			writeLCDData3Byte(ST77XX_RED, delay);
+			writeLCDData3Byte(ST77XX_GREEN, delay);
+			writeLCDData3Byte(ST77XX_BLUE, delay);
+			//writeLCDData2Byte(0x0000, delay);
+			//writeLCDData2Byte(0xffff, delay);
+
+/*
+			uint8_t readBuffer[8];
+
+			readLCDData(readBuffer, 8, delay);
+*/
 		}
   		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
 
@@ -1055,8 +1133,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 160;
+  RCC_OscInitStruct.PLL.PLLM = 16;
+  RCC_OscInitStruct.PLL.PLLN = 320;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 3;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -1146,7 +1224,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4 
                           |GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8 
-                          |GPIO_PIN_10|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
+                          |GPIO_PIN_10|GPIO_PIN_13|GPIO_PIN_14, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7 
@@ -1155,6 +1233,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5 
                           |GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
   /*Configure GPIO pins : PC0 PC1 PC2 PC3 
                            PC11 */
