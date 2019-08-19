@@ -52,7 +52,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -64,7 +63,6 @@ static GPIO_InitTypeDef  GPIO_InitStruct;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
@@ -669,9 +667,35 @@ void byteToBits(uint8_t bits[8], uint8_t byte) {
 void writeLCDDataByte(uint8_t dataByte, uint32_t delay) {
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);   // DC
 
-	uint8_t dataBytes[1] = { dataByte };
+	uint8_t commandBits[8];
+	byteToBits(commandBits, dataByte);
 
-	HAL_SPI_Transmit(&hspi1, (uint8_t*)dataBytes, 1, HAL_MAX_DELAY);
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);   // DC
+
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4,GPIO_PIN_RESET); // D2
+
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET); // CLK
+	for(int i = 0; i < 8; i++) {
+		uint8_t pinValue = commandBits[i] ? GPIO_PIN_SET : GPIO_PIN_RESET;
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, pinValue);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, pinValue);
+
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_RESET);
+
+		for(int j = 0; j < delay; j++) { asm("NOP");}
+
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_SET);
+
+		for(int j = 0; j < delay; j++) { asm("NOP");}
+/*
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4,GPIO_PIN_RESET); // D2
+*/
+	}
+
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4,GPIO_PIN_RESET); // D2
 }
 
 /*
@@ -679,52 +703,50 @@ void writeLCDDataByte(uint8_t dataByte, uint32_t delay) {
 void writeLCDData2Byte(uint8_t byte1, uint8_t byte2, uint32_t delay) {
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);   // DC
 
-	uint8_t dataBytes[2] = { byte1, byte2 };
+	uint8_t commandBits[8];
+	byteToBits(commandBits, byte1);
+	writeLCDDataByte(commandBits, delay);
 
-	HAL_SPI_Transmit(&hspi1, (uint8_t*)dataBytes, 2, HAL_MAX_DELAY);
+	byteToBits(commandBits, byte2);
+	writeLCDDataByte(commandBits, delay);
 }
-
-/*
-void writeLCDData2Byte(uint8_t dataByte, uint32_t delay) {
-	uint8_t dataBits[8];
-	byteToBits(dataBits, ((uint8_t)(dataByte & 0xff)));
-
-	writeLCDData(dataBits, 8, delay);
-
-	byteToBits(dataBits, ((uint8_t)((dataByte >> 8) & 0xff)));
-
-	writeLCDData(dataBits, 8, delay);
-}
-*/
 
 void writeLCDCommand(uint8_t command, uint32_t delay) {
 	uint8_t commandBits[8];
 	byteToBits(commandBits, command);
 
-	//commandBits[0] = 
-	uint8_t commandData[1] = { command };
-
 	// Write command
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_RESET); // DC
-	HAL_SPI_Transmit(&hspi1, (uint8_t*)commandData, 1, HAL_MAX_DELAY);
-/*
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
-  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
-	for(int i = 0; i < 8; i++) {
-		for(int j = 0; j < delay/2; j++) { asm("NOP");}
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, commandBits[i] ? GPIO_PIN_SET : GPIO_PIN_RESET);
-		for(int j = 0; j < delay/2; j++) { asm("NOP");}
-  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_SET);
 
+	//HAL_SPI_Transmit(&hspi1, (uint8_t*)commandData, 1, HAL_MAX_DELAY);
+
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4,GPIO_PIN_RESET); // D2
+
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET); // CLK
+	for(int i = 0; i < 8; i++) {
+		uint8_t pinValue = commandBits[i] ? GPIO_PIN_SET : GPIO_PIN_RESET;
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, pinValue);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, pinValue);
+
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_RESET);
 
 		for(int j = 0; j < delay; j++) { asm("NOP");}
 
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
-  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_RESET);
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_SET);
+
+		for(int j = 0; j < delay; j++) { asm("NOP");}
+/*
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4,GPIO_PIN_RESET); // D2
+*/
 	}
 
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
-  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4,GPIO_PIN_RESET); // D2
+
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET); // CLK
+/*
 */
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);   // DC
 }
@@ -858,7 +880,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
 // ST7789 specific commands used in init
@@ -1295,44 +1316,6 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_SPI1_Init(void)
-{
-
-  /* USER CODE BEGIN SPI1_Init 0 */
-
-  /* USER CODE END SPI1_Init 0 */
-
-  /* USER CODE BEGIN SPI1_Init 1 */
-
-  /* USER CODE END SPI1_Init 1 */
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_1LINE;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
-  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN SPI1_Init 2 */
-
-  /* USER CODE END SPI1_Init 2 */
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -1346,23 +1329,23 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3|GPIO_PIN_10, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3|GPIO_PIN_5|GPIO_PIN_7|GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_4, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : PA3 PA10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_10;
+  /*Configure GPIO pins : PA3 PA5 PA7 PA10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_5|GPIO_PIN_7|GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10;
+  /*Configure GPIO pins : PB10 PB4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_4;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
