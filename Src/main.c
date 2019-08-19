@@ -52,7 +52,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
+SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -64,7 +64,7 @@ static GPIO_InitTypeDef  GPIO_InitStruct;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_ADC1_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
@@ -641,7 +641,7 @@ void byteToBits(uint8_t bits[8], uint8_t byte) {
 */
 void byteToBits(uint8_t bits[8], uint8_t byte);
 void writeLCDDataByte(uint8_t dataByte, uint32_t delay);
-void writeLCDData2Byte(uint16_t dataByte, uint32_t delay);
+void writeLCDData2Byte(uint8_t byte1, uint8_t byte2, uint32_t delay);
 void writeLCDCommand(uint8_t command, uint32_t delay);
 void writeLCDData(uint8_t dataBits[], uint32_t count, uint32_t delay);
 
@@ -667,38 +667,21 @@ void byteToBits(uint8_t bits[8], uint8_t byte) {
 }
 
 void writeLCDDataByte(uint8_t dataByte, uint32_t delay) {
-	uint8_t dataBits[8];
-	byteToBits(dataBits, dataByte);
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);   // DC
 
-	writeLCDData(dataBits, 8, delay);
+	uint8_t dataBytes[1] = { dataByte };
+
+	HAL_SPI_Transmit(&hspi1, (uint8_t*)dataBytes, 1, HAL_MAX_DELAY);
 }
 
 /*
 */
-void writeLCDData2Byte(uint16_t dataByte, uint32_t delay) {
-	uint8_t dataBits[8];
-	byteToBits(dataBits, ((uint8_t)((dataByte >> 8) & 0xff)));
+void writeLCDData2Byte(uint8_t byte1, uint8_t byte2, uint32_t delay) {
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);   // DC
 
-	writeLCDData(dataBits, 8, delay);
+	uint8_t dataBytes[2] = { byte1, byte2 };
 
-	byteToBits(dataBits, ((uint8_t)(dataByte & 0xff)));
-
-	writeLCDData(dataBits, 8, delay);
-}
-
-void writeLCDData3Byte(uint32_t dataByte, uint32_t delay) {
-	uint8_t dataBits[8];
-	byteToBits(dataBits, ((uint8_t)((dataByte >> 16) & 0xff)));
-
-	writeLCDData(dataBits, 8, delay);
-
-	byteToBits(dataBits, ((uint8_t)((dataByte >> 8) & 0xff)));
-
-	writeLCDData(dataBits, 8, delay);
-
-	byteToBits(dataBits, ((uint8_t)(dataByte & 0xff)));
-
-	writeLCDData(dataBits, 8, delay);
+	HAL_SPI_Transmit(&hspi1, (uint8_t*)dataBytes, 2, HAL_MAX_DELAY);
 }
 
 /*
@@ -719,12 +702,14 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
 	byteToBits(commandBits, command);
 
 	//commandBits[0] = 
+	uint8_t commandData[1] = { command };
 
 	// Write command
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_RESET); // DC
+	HAL_SPI_Transmit(&hspi1, (uint8_t*)commandData, 1, HAL_MAX_DELAY);
+/*
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
-
 	for(int i = 0; i < 8; i++) {
 		for(int j = 0; j < delay/2; j++) { asm("NOP");}
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, commandBits[i] ? GPIO_PIN_SET : GPIO_PIN_RESET);
@@ -738,13 +723,17 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
   		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7,GPIO_PIN_RESET);
 	}
 
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_SET);   // DC
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
+*/
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);   // DC
 }
 
+/*
 void writeLCDData(uint8_t dataBits[], uint32_t count, uint32_t delay) {
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_SET);   // DC
+
+	HAL_SPI_Transmit(&hspi1, &data, 1, HAL_MAX_DELAY);
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
 
@@ -764,6 +753,7 @@ void writeLCDData(uint8_t dataBits[], uint32_t count, uint32_t delay) {
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15,GPIO_PIN_RESET); // D1
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // CLK
 }
+*/
 
 
 void readLCDData(uint8_t dataBits[], uint32_t count, uint32_t delay) {
@@ -846,6 +836,7 @@ int main(void)
   /* USER CODE BEGIN SysInit */
 
 
+    //__SPI1_CLK_ENABLE();
 
 /*
     //__SPI1_CLK_ENABLE();
@@ -867,63 +858,121 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ADC1_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-#define ST7735_TFTWIDTH_128   128 // for 1.44 and mini
-#define ST7735_TFTWIDTH_80     80 // for mini
-#define ST7735_TFTHEIGHT_128  128 // for 1.44" display
-#define ST7735_TFTHEIGHT_160  160 // for 1.8" and mini display
 
-#define ST_CMD_DELAY      0x80    // special signifier for command lists
+// ST7789 specific commands used in init
+#define ST7789_NOP                      0x00
+#define ST7789_SWRESET          0x01
+#define ST7789_RDDID            0x04
+#define ST7789_RDDST            0x09
 
-#define ST77XX_NOP        0x00
-#define ST77XX_SWRESET    0x01
-#define ST77XX_RDDID      0x04
-#define ST77XX_RDDST      0x09
+#define ST7789_RDDPM            0x0A      // Read display power mode
+#define ST7789_RDD_MADCTL       0x0B      // Read display MADCTL
+#define ST7789_RDD_COLMOD       0x0C      // Read display pixel format
+#define ST7789_RDDIM            0x0D      // Read display image mode
+#define ST7789_RDDSM            0x0E      // Read display signal mode
+#define ST7789_RDDSR            0x0F      // Read display self-diagnostic result (ST7789V)
 
-#define ST77XX_SLPIN      0x10
-#define ST77XX_SLPOUT     0x11
-#define ST77XX_PTLON      0x12
-#define ST77XX_NORON      0x13
+#define ST7789_SLPIN            0x10
+#define ST7789_SLPOUT           0x11
+#define ST7789_PTLON            0x12
+#define ST7789_NORON            0x13
 
-#define ST77XX_INVOFF     0x20
-#define ST77XX_INVON      0x21
-#define ST77XX_DISPOFF    0x28
-#define ST77XX_DISPON     0x29
-#define ST77XX_CASET      0x2A
-#define ST77XX_RASET      0x2B
-#define ST77XX_RAMWR      0x2C
-#define ST77XX_RAMRD      0x2E
+#define ST7789_INVOFF           0x20
+#define ST7789_INVON            0x21
+#define ST7789_GAMSET           0x26      // Gamma set
+#define ST7789_DISPOFF          0x28
+#define ST7789_DISPON           0x29
+#define ST7789_CASET            0x2A
+#define ST7789_RASET            0x2B
+#define ST7789_RAMWR            0x2C
+#define ST7789_RGBSET           0x2D      // Color setting for 4096, 64K and 262K colors
+#define ST7789_RAMRD            0x2E
 
-#define ST77XX_PTLAR      0x30
-#define ST77XX_COLMOD     0x3A
-#define ST77XX_MADCTL     0x36
+#define ST7789_PTLAR            0x30
+#define ST7789_VSCRDEF          0x33      // Vertical scrolling definition (ST7789V)
+#define ST7789_TEOFF            0x34      // Tearing effect line off
+#define ST7789_TEON                     0x35      // Tearing effect line on
+#define ST7789_MADCTL           0x36      // Memory data access control
+#define ST7789_IDMOFF           0x38      // Idle mode off
+#define ST7789_IDMON            0x39      // Idle mode on
+#define ST7789_RAMWRC           0x3C      // Memory write continue (ST7789V)
+#define ST7789_RAMRDC           0x3E      // Memory read continue (ST7789V)
+#define ST7789_COLMOD           0x3A
 
-#define ST77XX_MADCTL_MY  0x80
-#define ST77XX_MADCTL_MX  0x40
-#define ST77XX_MADCTL_MV  0x20
-#define ST77XX_MADCTL_ML  0x10
-#define ST77XX_MADCTL_RGB 0x00
 
-#define ST77XX_RDID1      0xDA
-#define ST77XX_RDID2      0xDB
-#define ST77XX_RDID3      0xDC
-#define ST77XX_RDID4      0xDD
+#define ST7789_RAMCTRL          0xB0      // RAM control
+#define ST7789_RGBCTRL          0xB1      // RGB control
+#define ST7789_PORCTRL          0xB2      // Porch control
+#define ST7789_FRCTRL1          0xB3      // Frame rate control
+#define ST7789_PARCTRL          0xB5      // Partial mode control
+#define ST7789_GCTRL            0xB7      // Gate control
+#define ST7789_GTADJ            0xB8      // Gate on timing adjustment
+#define ST7789_DGMEN            0xBA      // Digital gamma enable
+#define ST7789_VCOMS            0xBB      // VCOMS setting
+#define ST7789_LCMCTRL          0xC0      // LCM control
+#define ST7789_IDSET            0xC1      // ID setting
+#define ST7789_VDVVRHEN         0xC2      // VDV and VRH command enable
+#define ST7789_VRHS                     0xC3      // VRH set
+#define ST7789_VDVSET           0xC4      // VDV setting
+#define ST7789_VCMOFSET         0xC5      // VCOMS offset set
+#define ST7789_FRCTR2           0xC6      // FR Control 2
+#define ST7789_CABCCTRL         0xC7      // CABC control
+#define ST7789_REGSEL1          0xC8      // Register value section 1
+#define ST7789_REGSEL2          0xCA      // Register value section 2
+#define ST7789_PWMFRSEL         0xCC      // PWM frequency selection
+#define ST7789_PWCTRL1          0xD0      // Power control 1
+#define ST7789_VAPVANEN         0xD2      // Enable VAP/VAN signal output
+#define ST7789_CMD2EN           0xDF      // Command 2 enable
+#define ST7789_PVGAMCTRL        0xE0      // Positive voltage gamma control
+#define ST7789_NVGAMCTRL        0xE1      // Negative voltage gamma control
+#define ST7789_DGMLUTR          0xE2      // Digital gamma look-up table for red
+#define ST7789_DGMLUTB          0xE3      // Digital gamma look-up table for blue
+#define ST7789_GATECTRL         0xE4      // Gate control
+#define ST7789_SPI2EN           0xE7      // SPI2 enable
+#define ST7789_PWCTRL2          0xE8      // Power control 2
+#define ST7789_EQCTRL           0xE9      // Equalize time control
+#define ST7789_PROMCTRL         0xEC      // Program control
+#define ST7789_PROMEN           0xFA      // Program mode enable
+#define ST7789_NVMSET           0xFC      // NVM setting
+#define ST7789_PROMACT          0xFE      // Program action
 
-// Some ready-made 16-bit ('565') color settings:
-#define	ST77XX_BLACK      0x0000
-#define ST77XX_WHITE      0xFFFF
-#define	ST77XX_RED        0xF800
-#define	ST77XX_GREEN      0x07E0
-#define	ST77XX_BLUE       0x001F
-#define ST77XX_CYAN       0x07FF
-#define ST77XX_MAGENTA    0xF81F
-#define ST77XX_YELLOW     0xFFE0
-#define	ST77XX_ORANGE     0xFC00
+#define TFT_NOP     0x00
+#define TFT_SWRST   0x01
+
+#define TFT_SLPIN   0x10
+#define TFT_SLPOUT  0x11
+#define TFT_NORON   0x13
+
+#define TFT_INVOFF  0x20
+#define TFT_INVON   0x21
+#define TFT_DISPOFF 0x28
+#define TFT_DISPON  0x29
+#define TFT_CASET   0x2A
+#define TFT_PASET   0x2B
+#define TFT_RAMWR   0x2C
+#define TFT_RAMRD   0x2E
+#define TFT_MADCTL  0x36
+#define TFT_COLMOD  0x3A
+
+// Flags for TFT_MADCTL
+#define TFT_MAD_MY  0x80
+#define TFT_MAD_MX  0x40
+#define TFT_MAD_MV  0x20
+#define TFT_MAD_ML  0x10
+#define TFT_MAD_RGB 0x00
+#define TFT_MAD_BGR 0x08
+#define TFT_MAD_MH  0x04
+#define TFT_MAD_SS  0x02
+#define TFT_MAD_GS  0x01
+
+
   	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7|GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_10|GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
   	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6|GPIO_PIN_3|GPIO_PIN_5|GPIO_PIN_4|GPIO_PIN_10, GPIO_PIN_RESET);
   	//HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
 
+/*
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
 
 	for(int i = 0; i < 2; i++) {
@@ -933,7 +982,9 @@ int main(void)
   		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
 		HAL_Delay(500);
 	}
+*/
 
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -969,115 +1020,178 @@ int main(void)
 	uint32_t delay = 1;
 	/*
 	while(1) {
-		writeLCDCommand(ST77XX_NOP, delay);
-		writeLCDCommand(ST77XX_SWRESET, delay);
+		writeLCDCommand(ST7789_NOP, delay);
+		writeLCDCommand(ST7789_SWRESET, delay);
 	}
 	*/
 
-			
+	for(int i = 0; i < 10; i++) {
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+		HAL_Delay(100);
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+		HAL_Delay(100);
+	}
 /*
 */
+			
+/*
 	HAL_Delay(5);
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
 	HAL_Delay(5);
 
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+*/
 /*
 	for(int i = 0; i < 1000; i++) {
 		asm("NOP");
 	}
 */
+
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+		HAL_Delay(5);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+		HAL_Delay(20);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+
+/*
 	HAL_Delay(5);
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
 	//HAL_Delay(1000);
-	HAL_Delay(150);
 
-	writeLCDCommand(ST77XX_SWRESET, delay);
+*/
+
+	HAL_Delay(500);
+
+	writeLCDCommand(ST7789_SWRESET, delay);
 	HAL_Delay(150);
-//		writeLCDCommand(ST77XX_NOP, delay);
+/*
+*/
+//		writeLCDCommand(ST7789_NOP, delay);
 
 /*
 	HAL_Delay(1000);
 */
 
-	HAL_Delay(500);
-	writeLCDCommand(ST77XX_SLPIN, delay);
-	HAL_Delay(500);
-	writeLCDCommand(ST77XX_SLPOUT, delay);
-	HAL_Delay(500);
+	writeLCDCommand(ST7789_SLPOUT, delay);
+	HAL_Delay(120);
 /*
-		writeLCDCommand(ST77XX_NOP, delay);
+		writeLCDCommand(ST7789_NOP, delay);
 */
-	while(1) {
-		// DELAY
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+/*
+	for(int i = 0; i < 20; i++) {
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
 		HAL_Delay(100);
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
 		HAL_Delay(100);
 	}
-
-	writeLCDCommand(ST77XX_NORON, delay);
-
-	//HAL_Delay(1);
-  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+*/
+	writeLCDCommand(ST7789_NORON, delay);
 	HAL_Delay(10);
-//		writeLCDCommand(ST77XX_NOP, delay);
 
-	HAL_Delay(1000);
 
-	writeLCDCommand(ST77XX_COLMOD, delay);
+	writeLCDCommand(ST7789_MADCTL, delay);
+	writeLCDDataByte(0x08, delay); // BGR
+	//writeLCDDataByte(0x00, delay); // RGB
+	HAL_Delay(10);
+
+/*
+*/
+	writeLCDCommand(0xB6, delay);
+	writeLCDDataByte(0x0A, delay);
+	writeLCDDataByte(0x82, delay);
+
+	writeLCDCommand(ST7789_COLMOD, delay);
 	writeLCDDataByte(0x55, delay);
-  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
 	HAL_Delay(10);
 
-	writeLCDCommand(ST77XX_MADCTL, delay);
-	//writeLCDDataByte(0x08);
-	writeLCDDataByte(0x00, delay);
-  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
-	HAL_Delay(10);
 
-	writeLCDCommand(ST77XX_CASET, delay);
+	writeLCDCommand(ST7789_PORCTRL, delay);
+	writeLCDDataByte(0x0c, delay);
+	writeLCDDataByte(0x0c, delay);
 	writeLCDDataByte(0x00, delay);
-	writeLCDDataByte(0x00, delay);
-	writeLCDDataByte(0x00, delay);
-	writeLCDDataByte(0xF0, delay);
-	HAL_Delay(10);
-  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+	writeLCDDataByte(0x33, delay);
+	writeLCDDataByte(0x33, delay);
 
-	writeLCDCommand(ST77XX_RASET, delay);
+	writeLCDCommand(ST7789_GCTRL, delay);
+	writeLCDDataByte(0x35, delay);
+
+	// Power settings
+	writeLCDCommand(ST7789_VCOMS, delay);
+	writeLCDDataByte(0x28, delay);
+	writeLCDCommand(ST7789_LCMCTRL, delay);
+	writeLCDDataByte(0x0c, delay);
+	writeLCDCommand(ST7789_VDVVRHEN, delay);
+	writeLCDDataByte(0x01, delay);
+	writeLCDDataByte(0xFF, delay);
+	writeLCDCommand(ST7789_VRHS, delay);
+	writeLCDDataByte(0x10, delay);
+	writeLCDCommand(ST7789_VDVSET, delay);
+	writeLCDDataByte(0x20, delay);
+	writeLCDCommand(ST7789_FRCTR2, delay);
+	writeLCDDataByte(0x0f, delay);
+	writeLCDCommand(ST7789_PWCTRL1, delay);
+	writeLCDDataByte(0xa4, delay);
+	writeLCDDataByte(0xa1, delay);
+
+	// gamma
+	writeLCDCommand(ST7789_PVGAMCTRL, delay);
+	writeLCDDataByte(0xd0, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x02, delay);
+	writeLCDDataByte(0x07, delay);
+	writeLCDDataByte(0x0a, delay);
+	writeLCDDataByte(0x28, delay);
+	writeLCDDataByte(0x32, delay);
+	writeLCDDataByte(0x44, delay);
+	writeLCDDataByte(0x42, delay);
+	writeLCDDataByte(0x06, delay);
+	writeLCDDataByte(0x0e, delay);
+	writeLCDDataByte(0x12, delay);
+	writeLCDDataByte(0x14, delay);
+	writeLCDDataByte(0x17, delay);
+
+	writeLCDDataByte(ST7789_NVGAMCTRL, delay);
+	writeLCDDataByte(0xd0, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x02, delay);
+	writeLCDDataByte(0x07, delay);
+	writeLCDDataByte(0x0a, delay);
+	writeLCDDataByte(0x28, delay);
+	writeLCDDataByte(0x31, delay);
+	writeLCDDataByte(0x54, delay);
+	writeLCDDataByte(0x47, delay);
+	writeLCDDataByte(0x0e, delay);
+	writeLCDDataByte(0x1c, delay);
+	writeLCDDataByte(0x17, delay);
+	writeLCDDataByte(0x1b, delay);
+	writeLCDDataByte(0x1e, delay);
+
+	writeLCDCommand(ST7789_INVON, delay);
+
+	writeLCDCommand(ST7789_CASET, delay);
 	writeLCDDataByte(0x00, delay);
 	writeLCDDataByte(0x00, delay);
 	writeLCDDataByte(0x00, delay);
-	writeLCDDataByte(0xF0, delay);
-	HAL_Delay(10);
-  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+	writeLCDDataByte(0x10, delay);
 
-	writeLCDCommand(ST77XX_INVON, delay);
-	//HAL_Delay(1);
-  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
-	HAL_Delay(10);
+	writeLCDCommand(ST7789_RASET, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x10, delay);
 
-	writeLCDCommand(ST77XX_NORON, delay);
-	//HAL_Delay(1);
-  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
-	HAL_Delay(10);
+	HAL_Delay(120);
 
-	writeLCDCommand(ST77XX_DISPON, delay);
-	//HAL_Delay(1);
-  	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
+	writeLCDCommand(ST7789_DISPON, delay);
 	HAL_Delay(500);
+
+	writeLCDCommand(TFT_INVON, delay);
 
 	//continue;
 
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-		HAL_Delay(100);
-			
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-		HAL_Delay(100);
-
 /*
 		while(1) {
-		writeLCDCommand(ST77XX_RDDID, delay);
+		writeLCDCommand(ST7789_RDDID, delay);
 			uint8_t readBuffer[8];
 			readLCDData(readBuffer, 8, delay);
 			readLCDData(readBuffer, 8, delay);
@@ -1085,30 +1199,54 @@ int main(void)
 			readLCDData(readBuffer, 8, delay);
 		}
 */
-		writeLCDCommand(ST77XX_RAMWR, delay);
-		for(int i = 0; i < 240*(240/3); i++) {
-			writeLCDData3Byte(ST77XX_RED, delay);
-			writeLCDData3Byte(ST77XX_GREEN, delay);
-			writeLCDData3Byte(ST77XX_BLUE, delay);
-			//writeLCDData2Byte(0x0000, delay);
-			//writeLCDData2Byte(0xffff, delay);
+	writeLCDCommand(ST7789_CASET, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0xF0, delay);
 
+	writeLCDCommand(ST7789_RASET, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0x00, delay);
+	writeLCDDataByte(0xF0, delay);
+
+					writeLCDCommand(ST7789_RAMWR, delay);
+	while(1) {
+	for(int i = 0; i < 100; i++) {
+		for(int x = 0; x < 240; x++) {
+			for(int y = 0; y < 240; y++) {
 /*
-			uint8_t readBuffer[8];
+				writeLCDCommand(ST7789_RASET, delay);
+				writeLCDData2Byte(0x00, y, delay);
+				writeLCDData2Byte(0x00, y, delay);
 
-			readLCDData(readBuffer, 8, delay);
+				writeLCDCommand(ST7789_CASET, delay);
+				writeLCDData2Byte(0x00, x, delay);
+				writeLCDData2Byte(0x00, x, delay);
 */
+
+				if(x == y) {
+				//	writeLCDCommand(ST7789_RAMWR, delay);
+			//		writeLCDData2Byte(0xff, 0xff, delay);
+				} else {
+				}
+					//writeLCDData2Byte(0x00, 0x00, delay);
+					//writeLCDData2Byte(0xff, 0xff, delay);
+					writeLCDDataByte(y + i, delay);
+					writeLCDDataByte(x + i, delay);
+			}
 		}
+	}
+/*
+*/
   		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
 
-		// DELAY
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
 		HAL_Delay(100);
-			
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
 		HAL_Delay(100);
-
-	//while(1) {}
+	}
   }
   /* USER CODE END 3 */
 }
@@ -1157,52 +1295,40 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief ADC1 Initialization Function
+  * @brief SPI1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_ADC1_Init(void)
+static void MX_SPI1_Init(void)
 {
 
-  /* USER CODE BEGIN ADC1_Init 0 */
+  /* USER CODE BEGIN SPI1_Init 0 */
 
-  /* USER CODE END ADC1_Init 0 */
+  /* USER CODE END SPI1_Init 0 */
 
-  ADC_ChannelConfTypeDef sConfig = {0};
+  /* USER CODE BEGIN SPI1_Init 1 */
 
-  /* USER CODE BEGIN ADC1_Init 1 */
-
-  /* USER CODE END ADC1_Init 1 */
-  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
-  */
-  hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_1LINE;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
+  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
     Error_Handler();
   }
-  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
-  */
-  sConfig.Channel = ADC_CHANNEL_9;
-  sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN ADC1_Init 2 */
+  /* USER CODE BEGIN SPI1_Init 2 */
 
-  /* USER CODE END ADC1_Init 2 */
+  /* USER CODE END SPI1_Init 2 */
 
 }
 
@@ -1216,89 +1342,38 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4 
-                          |GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8 
-                          |GPIO_PIN_10|GPIO_PIN_13|GPIO_PIN_14, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3|GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7 
-                          |GPIO_PIN_10, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5 
-                          |GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
-  /*Configure GPIO pins : PC0 PC1 PC2 PC3 
-                           PC11 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
-                          |GPIO_PIN_11;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA1 PA2 PA3 PA4 
-                           PA5 PA6 PA7 PA8 
-                           PA10 PA15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4 
-                          |GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8 
-                          |GPIO_PIN_10|GPIO_PIN_15;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PC4 PC5 PC6 PC7 
-                           PC10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7 
-                          |GPIO_PIN_10;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PB0 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PB10 PB3 PB4 PB5 
-                           PB6 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5 
-                          |GPIO_PIN_6;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PB11 */
-  GPIO_InitStruct.Pin = GPIO_PIN_11;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA13 PA14 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14;
+  /*Configure GPIO pins : PA3 PA10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  /*Configure GPIO pin : PB10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
 
