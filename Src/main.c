@@ -638,7 +638,7 @@ void byteToBits(uint8_t bits[8], uint8_t byte) {
 }
 */
 void byteToBits(uint8_t bits[8], uint8_t byte);
-void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByteC, uint32_t delay);
+void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByteC, uint8_t dataByteD, uint8_t dataByteE, uint32_t delay);
 void writeLCDDataByte(uint8_t dataByte, uint32_t delay);
 void writeLCDCommand(uint8_t command, uint32_t delay);
 
@@ -664,11 +664,11 @@ void byteToBits(uint8_t bits[8], uint8_t byte) {
 }
 
 void writeLCDDataByte(uint8_t dataByte, uint32_t delay) {
-	writeLCDDataByteMulti(dataByte, dataByte, dataByte, delay);
+	writeLCDDataByteMulti(dataByte, dataByte, dataByte, dataByte, dataByte, delay);
 }
 
-void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByteC, uint32_t delay) {
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);   // DC
+void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByteC, uint8_t dataByteD, uint8_t dataByteE, uint32_t delay) {
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10,GPIO_PIN_SET);   // DC
 
 	uint8_t dataABits[8];
 	byteToBits(dataABits, dataByteA);
@@ -679,16 +679,23 @@ void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByt
 	uint8_t dataCBits[8];
 	byteToBits(dataCBits, dataByteC);
 
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);   // DC
+	uint8_t dataDBits[8];
+	byteToBits(dataDBits, dataByteD);
 
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
-  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4,GPIO_PIN_RESET); // D2
+	uint8_t dataEBits[8];
+	byteToBits(dataEBits, dataByteE);
+
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10,GPIO_PIN_SET);   // DC
+
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_10,GPIO_PIN_RESET); // D2
 
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET); // CLK
 	for(int i = 0; i < 8; i++) {
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, dataABits[i]);
-  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, dataBBits[i]);
-  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, dataCBits[i]);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, dataABits[i]);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, dataBBits[i]);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, dataCBits[i]);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, dataDBits[i]);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, dataEBits[i]);
 
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_RESET);
 
@@ -697,14 +704,9 @@ void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByt
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_SET);
 
 		for(int j = 0; j < delay; j++) { asm("NOP");}
-/*
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
-  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4,GPIO_PIN_RESET); // D2
-*/
 	}
 
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
-  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4,GPIO_PIN_RESET); // D2
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_10,GPIO_PIN_RESET); // D2
 }
 
 void writeLCDCommand(uint8_t command, uint32_t delay) {
@@ -712,18 +714,16 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
 	byteToBits(commandBits, command);
 
 	// Write command
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_RESET); // DC
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10,GPIO_PIN_RESET); // DC
 
 	//HAL_SPI_Transmit(&hspi1, (uint8_t*)commandData, 1, HAL_MAX_DELAY);
 
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
-  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4|GPIO_PIN_5,GPIO_PIN_RESET); // D2
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_10,GPIO_PIN_RESET); // D2
 
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET); // CLK
 	for(int i = 0; i < 8; i++) {
 		uint8_t pinValue = commandBits[i] ? GPIO_PIN_SET : GPIO_PIN_RESET;
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, pinValue);
-  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4|GPIO_PIN_5, pinValue);
+  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_10, pinValue);
 
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_RESET);
 
@@ -732,19 +732,14 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_SET);
 
 		for(int j = 0; j < delay; j++) { asm("NOP");}
-/*
-  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
-  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4,GPIO_PIN_RESET); // D2
-*/
 	}
 
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7,GPIO_PIN_RESET); // D1
-  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4|GPIO_PIN_5,GPIO_PIN_RESET); // D2
+  	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_10,GPIO_PIN_RESET); // D2
 
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET); // CLK
 /*
 */
-  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);   // DC
+  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10,GPIO_PIN_SET);   // DC
 }
 
 /* USER CODE END 0 */
@@ -1010,11 +1005,11 @@ int main(void)
 	}
 */
 
-  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
 		HAL_Delay(5);
-  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
 		HAL_Delay(20);
-  		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+  		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
 
 /*
 	HAL_Delay(5);
@@ -1196,8 +1191,8 @@ int main(void)
 				}
 					//writeLCDData2Byte(0x00, 0x00, delay);
 					//writeLCDData2Byte(0xff, 0xff, delay);
-					writeLCDDataByteMulti(y + i, y - i, y + (i * 2), delay);
-					writeLCDDataByteMulti(x + i, x - i, x + (i * 2), delay);
+					writeLCDDataByteMulti(y + i, y - i, y + (i * 2), x + i, x - i, delay);
+					writeLCDDataByteMulti(x + i, x - i, x + (i * 2), y + i, y - i, delay);
 			}
 		}
 	}
@@ -1274,7 +1269,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3|GPIO_PIN_5|GPIO_PIN_7|GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_10|GPIO_PIN_3|GPIO_PIN_4 
+                          |GPIO_PIN_5, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
@@ -1286,8 +1282,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB10 PB4 PB5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_4|GPIO_PIN_5;
+  /*Configure GPIO pins : PB1 PB10 PB3 PB4 
+                           PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_10|GPIO_PIN_3|GPIO_PIN_4 
+                          |GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

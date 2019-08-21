@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=/home/mike/bonobo-backups/mike/source/stm32f4/monero-badge-f405/Inc
+HeaderPath=/home/mike/source/monero-badge-f405/Inc
 HeaderFiles=stm32f4xx_it.h;stm32f4xx_hal_conf.h;main.h;usb_device.h;usbd_conf.h;usbd_desc.h;usbd_cdc_if.h;
-SourcePath=/home/mike/bonobo-backups/mike/source/stm32f4/monero-badge-f405/Src
+SourcePath=/home/mike/source/monero-badge-f405/Src
 SourceFiles=stm32f4xx_it.c;stm32f4xx_hal_msp.c;main.c;usb_device.c;usbd_conf.c;usbd_desc.c;usbd_cdc_if.c;
 
 [PreviousLibFiles]
