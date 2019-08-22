@@ -642,6 +642,82 @@ void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByt
 void writeLCDDataByte(uint8_t dataByte, uint32_t delay);
 void writeLCDCommand(uint8_t command, uint32_t delay);
 
+void drawLine(float y1, float x1, float y2, float x2, uint16_t color, uint16_t buffer[240*240]) {
+	float xDiff = x2 - x1;
+	float yDiff = y2 - y1;
+
+	float m = yDiff / xDiff;
+	float c = y1 - (m * x1);
+
+	if(x2 > x1) {
+		float x = x1;
+		while(x <= x2) {
+			int y = (m * x) + c;
+			buffer[(int)(((int)y * 240) + (int)x)] = color;
+			x++;
+		}
+	} else {
+		float x = x2;
+		while(x >= x1) {
+			int y = (m * x) + c;
+			buffer[(int)(((int)y * 240) + (int)x)] = color;
+			x--;
+		}
+	}
+}
+
+void drawCircle(float y, float x, float radius, uint16_t color, uint16_t buffer[240*240]) {
+	//for(; radius > 0; radius--) {
+/*
+*/
+/*
+		for(float xPos = 0; xPos < 240; xPos++) {
+			for(float yPos = 0; yPos < 240; yPos++) {
+				buffer[(int)((yPos * 240) + xPos)] = 0b000001111100000;
+			}
+		}
+
+			int bufferIndex = (60 * 240.0) + 65;
+			buffer[bufferIndex] = 0b111111111111111;
+*/
+
+		int bob = 0.0;
+		for(; radius >= 0; radius -= 0.5) {
+			for(float i = 0.0f; i < (2.0f * 3.141f); i += 0.01f) {
+				//float xPos = 65.0 + (60.0 * sin(i));
+				float xPos = x + (radius * sinf(i));
+				float yPos = y + (radius * cosf(i));
+	
+				buffer[(int)(((int)yPos * 240) + (int)xPos)] = color;
+			}
+		}
+
+/*
+			float xPos = 100.0 + bob;
+			float yPos = 85.0 + bob;
+			bob++;
+			if(bob >= 40) {
+				bob = 40;
+			}
+*/
+/*
+*/
+			/*
+			*/
+	//}
+/*
+		for(int x = 0; x < 240; x++) {
+			for(int y = 0; y < 240; y++) {
+					if(y < 80) {
+						buffer[(y * 240) + x] = 0b111110000000000;
+					} else {
+						buffer[(y * 240) + x] = 0b000000000000000;
+					}
+			}
+		}
+*/
+}
+
 void byteToBits(uint8_t bits[8], uint8_t byte) {
 	bits[0] = (byte & 0x80) ? GPIO_PIN_SET : GPIO_PIN_RESET;
 	bits[1] = (byte & 0x40) ? GPIO_PIN_SET : GPIO_PIN_RESET;
@@ -740,6 +816,38 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
 /*
 */
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10,GPIO_PIN_SET);   // DC
+}
+
+void drawHeart(uint16_t color, uint16_t heartBuffer[240*240]) {
+	uint16_t bufferIndex = 0;
+	for(uint16_t x = 0; x < 240 * 240; x++) {
+		heartBuffer[bufferIndex++] = 0;
+	}
+
+	int x1Center = 61.0;
+	int y1Center = 60.0;
+
+	int x2Center = 179.0;
+	int y2Center = 60.0;
+
+	int xMidpoint = 120.0;
+
+	float circleRadius = 60;
+
+	drawCircle(x1Center, y1Center, circleRadius, color, heartBuffer);
+	drawCircle(x2Center, y2Center, circleRadius, color, heartBuffer);
+
+	float twotwofiveInRadians = 3.14159f/3.0f;
+	int x1LineStart = x1Center - (circleRadius * sin(twotwofiveInRadians));
+	int y1LineStart = y1Center + (circleRadius * cos(twotwofiveInRadians));
+
+	int x2LineStart = x2Center + (circleRadius * sin(twotwofiveInRadians));
+
+	for(int x = x1LineStart; x < x2LineStart; x++) {
+		drawLine(x, y1LineStart, xMidpoint, 239, color, heartBuffer);
+	}
+
+	drawCircle(120, 120, 60, color, heartBuffer);
 }
 
 /* USER CODE END 0 */
@@ -1157,45 +1265,80 @@ int main(void)
 			readLCDData(readBuffer, 8, delay);
 		}
 */
-	writeLCDCommand(ST7789_CASET, delay);
-	writeLCDDataByte(0x00, delay);
-	writeLCDDataByte(0x00, delay);
-	writeLCDDataByte(0x00, delay);
-	writeLCDDataByte(0xF0, delay);
 
-	writeLCDCommand(ST7789_RASET, delay);
-	writeLCDDataByte(0x00, delay);
-	writeLCDDataByte(0x00, delay);
-	writeLCDDataByte(0x00, delay);
-	writeLCDDataByte(0xF0, delay);
+	uint16_t statusBuffer[240 * 240];
+	uint16_t heartBuffer[240 * 240];
 
-					writeLCDCommand(ST7789_RAMWR, delay);
+	uint16_t statusIndex = 0;
+
+	uint16_t heartColor = 0b000001111100000;
+
+	uint32_t lastTick = HAL_GetTick();
 	while(1) {
-	for(int i = 0; i < 100; i++) {
-		for(int x = 0; x < 240; x++) {
-			for(int y = 0; y < 240; y++) {
 /*
-				writeLCDCommand(ST7789_RASET, delay);
-				writeLCDData2Byte(0x00, y, delay);
-				writeLCDData2Byte(0x00, y, delay);
+		float tickDistance = HAL_GetTick() - lastTick;
+		
+		if(tickDistance > 1000.0f) {
+			lastTick = HAL_GetTick();
+		} else if(tickDistance > 500.0f) {
+			heartColor = ((int)(0xff * 1.0f/logf(10.0f + tickDistance))) & 0b000001111100000;
+		} else {
+			heartColor = ((int)(0xff * 1.0f/logf(10.0f + tickDistance))) & 0b000001111100000;
+		}
+*/
+		
+		statusIndex++;
 
-				writeLCDCommand(ST7789_CASET, delay);
-				writeLCDData2Byte(0x00, x, delay);
-				writeLCDData2Byte(0x00, x, delay);
+		uint16_t bufferIndex = 0;
+		for(uint16_t i = 0; i < 240*240; i++) {
+			if(statusIndex >= 240*240) {
+				statusIndex = 0;
+			}
+
+			//if(i > statusIndex) {
+				statusBuffer[i] = 0;
+			//} else {
+			//	statusBuffer[i] = 0b111110000000000;
+			//}
+		}
+/*
 */
 
-				if(x == y) {
-				//	writeLCDCommand(ST7789_RAMWR, delay);
-			//		writeLCDData2Byte(0xff, 0xff, delay);
-				} else {
-				}
-					//writeLCDData2Byte(0x00, 0x00, delay);
-					//writeLCDData2Byte(0xff, 0xff, delay);
-					writeLCDDataByteMulti(y + i, y - i, y + (i * 2), x + i, x - i, delay);
-					writeLCDDataByteMulti(x + i, x - i, x + (i * 2), y + i, y - i, delay);
+		drawHeart(heartColor, heartBuffer);
+
+		writeLCDCommand(ST7789_CASET, delay);
+		writeLCDDataByte(0x00, delay);
+		writeLCDDataByte(0x00, delay);
+		writeLCDDataByte(0x00, delay);
+		writeLCDDataByte(0xF0, delay);
+
+		writeLCDCommand(ST7789_RASET, delay);
+		writeLCDDataByte(0x00, delay);
+		writeLCDDataByte(0x00, delay);
+		writeLCDDataByte(0x00, delay);
+		writeLCDDataByte(0xF0, delay);
+
+		writeLCDCommand(ST7789_RAMWR, delay);
+		bufferIndex = 0;
+		for(uint16_t x = 0; x < 240; x++) {
+			for(uint16_t y = 0; y < 240; y++) {
+					bufferIndex = (y*240) + x;
+					writeLCDDataByteMulti(
+						heartBuffer[bufferIndex] & 0xff,
+						heartBuffer[bufferIndex] & 0xff,
+						heartBuffer[bufferIndex] & 0xff,
+						heartBuffer[bufferIndex] & 0xff,
+						heartBuffer[bufferIndex] & 0xff,
+					delay);
+					writeLCDDataByteMulti(
+						(heartBuffer[bufferIndex] >> 8),
+						(heartBuffer[bufferIndex] >> 8),
+						(heartBuffer[bufferIndex] >> 8),
+						(heartBuffer[bufferIndex] >> 8),
+						(heartBuffer[bufferIndex] >> 8),
+					delay);
 			}
 		}
-	}
 /*
 */
   		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
