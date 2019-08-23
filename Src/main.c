@@ -554,15 +554,15 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 */
 
 uint16_t setTriplet(uint8_t screen, uint8_t colour, uint16_t value) {
-	uint16_t maskedValue = (~(0b111 << (3 * screen))) & value;
+	uint16_t maskedValue = (~(0b111 << (1 + (3 * screen)))) & value;
 
-	uint16_t combinedValue = (maskedValue | ((colour & 0xff) << (3 * screen)));
+	uint16_t combinedValue = (maskedValue | ((colour & 0xff) << (1 + (3 * screen))));
 
 	return combinedValue;
 }
 
 uint16_t getTriplet(uint8_t screen, uint16_t value) {
-	return (value >> (3 * screen)) & 0b111;
+	return (value >> (1 + (3 * screen))) & 0b111;
 }
 
 uint16_t getPixelTFT(uint16_t xPos, uint16_t yPos, uint8_t screen, uint16_t buffer[240*240]) {
@@ -572,7 +572,9 @@ uint16_t getPixelTFT(uint16_t xPos, uint16_t yPos, uint8_t screen, uint16_t buff
 
 void setPixelTFT(uint16_t xPos, uint16_t yPos, uint8_t screen, uint8_t color, uint16_t buffer[240*240]) {
 	int pixelIndex = (int)(((int)yPos * 240) + (int)xPos);
-	buffer[pixelIndex] = setTriplet(screen, color, buffer[pixelIndex]);
+	uint16_t pixelValue = buffer[pixelIndex];
+
+	buffer[pixelIndex] = setTriplet(screen, color, pixelValue);
 }
 
 void drawLine(float y1, float x1, float y2, float x2, uint8_t screen, uint16_t color, uint16_t buffer[240*240]) {
@@ -1164,28 +1166,61 @@ int main(void)
 		}
 */
 
+#define SCREEN_TFT_BLUE   0
+#define SCREEN_TFT_RED    1
+#define SCREEN_TFT_GREEN  2
+#define SCREEN_TFT_BLACK  3
+#define SCREEN_TFT_YELLOW 4
+#define SCREEN_TFT_ORANGE 5
+#define SCREEN_TFT_BROWN  6
+#define SCREEN_TFT_WHITE  7
+
 	uint16_t colourLUT[] = {
 		0b111110000000000,	// blue
 		0b000001111100000,	// red
-		0b000000000011111,	// blue
+		0b000000000011111,	// green
 		0b000000000000000,	// black
+		0b111110000011111,	// orange
+		0b111111111100000,	// yellow
+		0b111110000011111,	// purple
+		0b111111111111111,	// white
 	};
 
-#define GOOGLY_INNER_LEFT_SCREEN 0
-#define GOOGLY_INNER_RIGHT_SCREEN 1
+/*
+		//drawHeart(STATUS_SCREEN, heartColor, screenBuffers);			// YES
+		//drawHeart(GOOGLY_OUTER_LEFT_SCREEN, heartColor, screenBuffers);	// INNER LEFT
+		//drawHeart(GOOGLY_INNER_LEFT_SCREEN, heartColor, screenBuffers);	// OUTER RIGHT
+		//drawHeart(GOOGLY_INNER_RIGHT_SCREEN, heartColor, screenBuffers);	// OUTER LEFT
+		drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, heartColor, screenBuffers);	// INNER RIGHT
+*/
+
+/*
+#define GOOGLY_OUTER_LEFT_SCREEN 0
+#define GOOGLY_OUTER_RIGHT_SCREEN 1
 #define STATUS_SCREEN  2
-#define GOOGLY_OUTER_LEFT_SCREEN 3
-#define GOOGLY_OUTER_RIGHT_SCREEN 4
+#define GOOGLY_INNER_RIGHT_SCREEN 3
+#define GOOGLY_INNER_LEFT_SCREEN 4
+*/
+
+#define GOOGLY_OUTER_LEFT_SCREEN 4
+#define GOOGLY_OUTER_RIGHT_SCREEN 3
+#define STATUS_SCREEN  2
+#define GOOGLY_INNER_RIGHT_SCREEN 0
+#define GOOGLY_INNER_LEFT_SCREEN 1
+/*
+*/
 
 	uint16_t screenBuffers[240 * 240];
 
 	for(uint16_t x = 0; x < 240 * 240; x++) {
-		screenBuffers[x] = 0b0011011011011011;
+		//screenBuffers[x] = 0b0010010010010010;
+		//screenBuffers[x] = 0xff;
+		screenBuffers[x] = 0;
 	}
 
 	uint16_t statusIndex = 0;
 
-	uint16_t heartColor = 1;
+	uint16_t heartColor = SCREEN_TFT_RED;
 
 	uint32_t lastTick = HAL_GetTick();
 	while(1) {
@@ -1219,7 +1254,13 @@ int main(void)
 /*
 */
 
-		drawHeart(STATUS_SCREEN, heartColor, screenBuffers);
+/*
+		drawHeart(STATUS_SCREEN, heartColor, screenBuffers);			// YES
+		drawHeart(GOOGLY_OUTER_LEFT_SCREEN, heartColor, screenBuffers);	// INNER LEFT
+		drawHeart(GOOGLY_INNER_LEFT_SCREEN, heartColor, screenBuffers);	// OUTER RIGHT
+		drawHeart(GOOGLY_INNER_RIGHT_SCREEN, heartColor, screenBuffers);	// OUTER LEFT
+*/
+		drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, heartColor, screenBuffers);	// INNER RIGHT
 
 		writeLCDCommand(ST7789_CASET, delay);
 		writeLCDDataByte(0x00, delay);
@@ -1242,12 +1283,6 @@ int main(void)
 					bufferIndex = (y*240) + x;
 					// 0b0 111 111 111 111 111
 					writeLCDDataByteMulti(
-//#define GOOGLY_INNER_LEFT_SCREEN 0
-//#define GOOGLY_INNER_RIGHT_SCREEN 1
-//#define STATUS_SCREEN  2
-//#define GOOGLY_OUTER_LEFT_SCREEN 3
-//#define GOOGLY_OUTER_RIGHT_SCREEN 4
-
 						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_LEFT_SCREEN, screenBuffers)],
 						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_LEFT_SCREEN, screenBuffers)],
 						colourLUT[getPixelTFT(x, y, STATUS_SCREEN, screenBuffers)],
