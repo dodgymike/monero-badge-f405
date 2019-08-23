@@ -554,28 +554,39 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 */
 
 uint16_t setTriplet(uint8_t screen, uint8_t colour, uint16_t value) {
-	uint16_t maskedValue = (~(0b111 << (1 + (3 * screen)))) & value;
+        uint16_t screenMask = 0b111 << (1 + (3 * screen));
+        uint16_t invertedScreenMask = ~screenMask;
+        uint16_t screenMaskedOut = value & invertedScreenMask;
 
-	uint16_t combinedValue = (maskedValue | ((colour & 0xff) << (1 + (3 * screen))));
+        uint16_t shiftedColour = colour << (1 + (3 * screen));
 
-	return combinedValue;
+        uint16_t combinedValue = screenMaskedOut | shiftedColour;
+
+        return combinedValue;
 }
 
 uint16_t getTriplet(uint8_t screen, uint16_t value) {
-	return (value >> (1 + (3 * screen))) & 0b111;
+        return (value >> (1 + (3 * screen))) & 0b111;
 }
 
 uint16_t getPixelTFT(uint16_t xPos, uint16_t yPos, uint8_t screen, uint16_t buffer[240*240]) {
-	int pixelIndex = (int)(((int)yPos * 240) + (int)xPos);
-	return getTriplet(screen, buffer[pixelIndex]);
+        int pixelIndex = (int)(((int)yPos * 240) + (int)xPos);
+        uint16_t triplet = getTriplet(screen, buffer[pixelIndex]);
+        //printf("TRIPLET (%d)\n");
+
+        return triplet;
 }
 
 void setPixelTFT(uint16_t xPos, uint16_t yPos, uint8_t screen, uint8_t color, uint16_t buffer[240*240]) {
-	int pixelIndex = (int)(((int)yPos * 240) + (int)xPos);
-	uint16_t pixelValue = buffer[pixelIndex];
+        int pixelIndex = (int)(((int)yPos * 240) + (int)xPos);
 
-	buffer[pixelIndex] = setTriplet(screen, color, pixelValue);
+        uint16_t pixels = buffer[pixelIndex];
+
+        uint16_t pixelValue = buffer[pixelIndex];
+        //printf("PIXELVALUE (%d)\n", pixelValue);
+        buffer[pixelIndex] = setTriplet(screen, color, pixelValue);
 }
+
 
 void drawLine(float y1, float x1, float y2, float x2, uint8_t screen, uint16_t color, uint16_t buffer[240*240]) {
 	float xDiff = x2 - x1;
