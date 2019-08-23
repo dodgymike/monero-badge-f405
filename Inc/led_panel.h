@@ -12,8 +12,8 @@
 void enableLedPanel(uint8_t *ledPanelEnabled);
 void disableLedPanel(uint8_t *ledPanelEnabled);
 
-void setPixelColour(uint8_t x, uint8_t y, uint32_t brightness, uint32_t colour);
-void setPixel(uint8_t x, uint8_t y, uint32_t brightness, uint32_t red, uint32_t green, uint32_t blue);
+//void setPixelColour(uint8_t x, uint8_t y, uint32_t brightness, uint32_t colour);
+//void setPixel(uint8_t x, uint8_t y, uint32_t brightness, uint32_t red, uint32_t green, uint32_t blue);
 
 uint32_t rgbToPixel(uint32_t brightness, uint32_t red, uint32_t green, uint32_t blue);
 void ClearPixels();

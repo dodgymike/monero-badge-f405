@@ -451,6 +451,7 @@ struct Particle {
 	uint8_t y;
 };
 
+/*
 void blind(uint32_t brightness, uint32_t whiteLevel, uint32_t startButtonPressed) {
 	for(uint8_t x = 0; x < 24; x++) {
 		for(uint8_t y = 0; y < 24; y++) {
@@ -481,6 +482,7 @@ void random_pixels(uint32_t brightness, uint32_t startButtonPressed) {
 		}
 	}
 }
+*/
 
 static const uint8_t maxParticles = 32;
 struct Particle* particles[32];
@@ -502,6 +504,7 @@ void binToHex(uint8_t in[], uint8_t out[], uint8_t byteCount) {
 
 uint32_t irDelayDebug = 0;
 uint8_t irDelay = 26;
+/*
 void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t brightness, uint32_t batteryAdcAverage, uint32_t batteryVoltage100, uint32_t startButtonPressed) {
 	for(int i = 0; i < 16; i++) {
 		setPixel(i, 0, brightness, (buttonState[i] > 256) ? 20 : 0, (buttonState[i] <= 256) ? 20 : 0, 0);
@@ -548,101 +551,31 @@ void debug(uint32_t buttonState[16], uint32_t buttonAccumulators[16], uint32_t b
 	uint8_t receivedDataCount = irRX(irData, 100);
 
 	uint8_t hexOut[30];
-	binToHex(irData, hexOut, receivedDataCount);
-
-	uint8_t irDebugText[100];
-	sprintf(irDebugText, "Received (%d) bytes hex (%s)\r\n", receivedDataCount, hexOut);
-	uint8_t irDisplayText[10];
-	sprintf(irDisplayText, "%.2d", receivedDataCount);
-
-	//drawText(brightness, 13, 15, irDisplayText, 2);
-	
-	//CDC_Transmit_FS(irDebugText, strlen(irDebugText));
-/*
-	CDC_Transmit_FS(batteryAdcValueText, strlen(batteryAdcValueText));
-	CDC_Transmit_FS("\r\n", 2);
-	CDC_Transmit_FS(batteryVoltageText, strlen(batteryVoltageText));
-	CDC_Transmit_FS("\r\n", 2);
 */
+
+uint16_t setTriplet(uint8_t screen, uint8_t colour, uint16_t value) {
+	uint16_t maskedValue = (~(0b111 << (3 * screen))) & value;
+
+	uint16_t combinedValue = (maskedValue | ((colour & 0xff) << (3 * screen)));
+
+	return combinedValue;
 }
 
-uint16_t readButtons() {
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-        //HAL_Delay(1);
-
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-        //HAL_Delay(1);
-
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-        //HAL_Delay(1);
-
-	// load   2 - PB5
-	// signal 1 - PB0
-	// clock  3 - PA3
-
-       	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-
-	// latch the input buttons
-	int delayDuration = 10;
-	int delayCount = 0;
-	//int8_t buttonDebugString[40];
-	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
-	//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-
-	// WEIRD CLOCKING PROBLEM, WHICH NO LONGER APPLIES
-	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
-	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
-
-	uint16_t buttonBits = 0;
-        for(int bitCount = 0; bitCount < 16; bitCount++) {
-        //HAL_Delay(1);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
-		//HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
-        //HAL_Delay(1);
-		uint16_t buttonBit = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
-		//HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
-        //HAL_Delay(1);
-
-		buttonBits |= (buttonBit) << bitCount;
-		//buttonDebugString[bitCount] = buttonBit ? '1' : '0';
-	}
-	/*
-	buttonDebugString[16] = '\r';
-	buttonDebugString[17] = '\n';
-	buttonDebugString[18] = 0;
-	serialSend(buttonDebugString);
-	*/
-
-	return buttonBits;
+uint16_t getTriplet(uint8_t screen, uint16_t value) {
+	return (value >> (3 * screen)) & 0b111;
 }
 
-void enablePower() {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+uint16_t getPixelTFT(uint16_t xPos, uint16_t yPos, uint8_t screen, uint16_t buffer[240*240]) {
+	int pixelIndex = (int)(((int)yPos * 240) + (int)xPos);
+	return getTriplet(screen, buffer[pixelIndex]);
 }
 
-void disablePower() {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+void setPixelTFT(uint16_t xPos, uint16_t yPos, uint8_t screen, uint8_t color, uint16_t buffer[240*240]) {
+	int pixelIndex = (int)(((int)yPos * 240) + (int)xPos);
+	buffer[pixelIndex] = setTriplet(screen, color, buffer[pixelIndex]);
 }
 
-/*
-void byteToBits(uint8_t bits[8], uint8_t byte) {
-	for(int i = 0; i < 8; i++) {
-		bits[i] = ((0x01 << (8 - i - 1)) & byte);
-	}
-}
-void byteToBits(uint8_t bits[8], uint8_t byte) {
-	for(int i = 0; i < 8; i++) {
-		bits[i] = ((0x01 << (i)) & byte);
-	}
-}
-*/
-void byteToBits(uint8_t bits[8], uint8_t byte);
-void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByteC, uint8_t dataByteD, uint8_t dataByteE, uint32_t delay);
-void writeLCDDataByte(uint8_t dataByte, uint32_t delay);
-void writeLCDCommand(uint8_t command, uint32_t delay);
-
-void drawLine(float y1, float x1, float y2, float x2, uint16_t color, uint16_t buffer[240*240]) {
+void drawLine(float y1, float x1, float y2, float x2, uint8_t screen, uint16_t color, uint16_t buffer[240*240]) {
 	float xDiff = x2 - x1;
 	float yDiff = y2 - y1;
 
@@ -653,69 +586,34 @@ void drawLine(float y1, float x1, float y2, float x2, uint16_t color, uint16_t b
 		float x = x1;
 		while(x <= x2) {
 			int y = (m * x) + c;
-			buffer[(int)(((int)y * 240) + (int)x)] = color;
+
+			setPixelTFT(x, y, screen, color, buffer);
+
 			x++;
 		}
 	} else {
 		float x = x2;
 		while(x >= x1) {
 			int y = (m * x) + c;
-			buffer[(int)(((int)y * 240) + (int)x)] = color;
+
+			setPixelTFT(x, y, screen, color, buffer);
+
 			x--;
 		}
 	}
 }
 
-void drawCircle(float y, float x, float radius, uint16_t color, uint16_t buffer[240*240]) {
-	//for(; radius > 0; radius--) {
-/*
-*/
-/*
-		for(float xPos = 0; xPos < 240; xPos++) {
-			for(float yPos = 0; yPos < 240; yPos++) {
-				buffer[(int)((yPos * 240) + xPos)] = 0b000001111100000;
-			}
-		}
+void drawCircle(float y, float x, float radius, uint8_t screen, uint16_t color, uint16_t buffer[240*240]) {
+	int bob = 0.0;
+	for(; radius >= 0; radius -= 0.5) {
+		for(float i = 0.0f; i < (2.0f * 3.141f); i += 0.01f) {
+			//float xPos = 65.0 + (60.0 * sin(i));
+			float xPos = x + (radius * sinf(i));
+			float yPos = y + (radius * cosf(i));
 
-			int bufferIndex = (60 * 240.0) + 65;
-			buffer[bufferIndex] = 0b111111111111111;
-*/
-
-		int bob = 0.0;
-		for(; radius >= 0; radius -= 0.5) {
-			for(float i = 0.0f; i < (2.0f * 3.141f); i += 0.01f) {
-				//float xPos = 65.0 + (60.0 * sin(i));
-				float xPos = x + (radius * sinf(i));
-				float yPos = y + (radius * cosf(i));
-	
-				buffer[(int)(((int)yPos * 240) + (int)xPos)] = color;
-			}
+			setPixelTFT(xPos, yPos, screen, color, buffer);
 		}
-
-/*
-			float xPos = 100.0 + bob;
-			float yPos = 85.0 + bob;
-			bob++;
-			if(bob >= 40) {
-				bob = 40;
-			}
-*/
-/*
-*/
-			/*
-			*/
-	//}
-/*
-		for(int x = 0; x < 240; x++) {
-			for(int y = 0; y < 240; y++) {
-					if(y < 80) {
-						buffer[(y * 240) + x] = 0b111110000000000;
-					} else {
-						buffer[(y * 240) + x] = 0b000000000000000;
-					}
-			}
-		}
-*/
+	}
 }
 
 void byteToBits(uint8_t bits[8], uint8_t byte) {
@@ -818,10 +716,10 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10,GPIO_PIN_SET);   // DC
 }
 
-void drawHeart(uint16_t color, uint16_t heartBuffer[240*240]) {
+void drawHeart(uint8_t screen, uint16_t color, uint8_t heartBuffer[240*240]) {
 	uint16_t bufferIndex = 0;
 	for(uint16_t x = 0; x < 240 * 240; x++) {
-		heartBuffer[bufferIndex++] = 0;
+		heartBuffer[bufferIndex++] = 3;
 	}
 
 	int x1Center = 61.0;
@@ -834,8 +732,8 @@ void drawHeart(uint16_t color, uint16_t heartBuffer[240*240]) {
 
 	float circleRadius = 60;
 
-	drawCircle(x1Center, y1Center, circleRadius, color, heartBuffer);
-	drawCircle(x2Center, y2Center, circleRadius, color, heartBuffer);
+	drawCircle(x1Center, y1Center, circleRadius, screen, color, heartBuffer);
+	drawCircle(x2Center, y2Center, circleRadius, screen, color, heartBuffer);
 
 	float twotwofiveInRadians = 3.14159f/3.0f;
 	int x1LineStart = x1Center - (circleRadius * sin(twotwofiveInRadians));
@@ -844,10 +742,10 @@ void drawHeart(uint16_t color, uint16_t heartBuffer[240*240]) {
 	int x2LineStart = x2Center + (circleRadius * sin(twotwofiveInRadians));
 
 	for(int x = x1LineStart; x < x2LineStart; x++) {
-		drawLine(x, y1LineStart, xMidpoint, 239, color, heartBuffer);
+		drawLine(x, y1LineStart, xMidpoint, 239, screen, color, heartBuffer);
 	}
 
-	drawCircle(120, 120, 60, color, heartBuffer);
+	drawCircle(120, 120, 60, screen, color, heartBuffer);
 }
 
 /* USER CODE END 0 */
@@ -1266,12 +1164,28 @@ int main(void)
 		}
 */
 
-	uint16_t statusBuffer[240 * 240];
-	uint16_t heartBuffer[240 * 240];
+	uint16_t colourLUT[] = {
+		0b111110000000000,	// blue
+		0b000001111100000,	// red
+		0b000000000011111,	// blue
+		0b000000000000000,	// black
+	};
+
+#define GOOGLY_INNER_LEFT_SCREEN 0
+#define GOOGLY_INNER_RIGHT_SCREEN 1
+#define STATUS_SCREEN  2
+#define GOOGLY_OUTER_LEFT_SCREEN 3
+#define GOOGLY_OUTER_RIGHT_SCREEN 4
+
+	uint16_t screenBuffers[240 * 240];
+
+	for(uint16_t x = 0; x < 240 * 240; x++) {
+		screenBuffers[x] = 0b0011011011011011;
+	}
 
 	uint16_t statusIndex = 0;
 
-	uint16_t heartColor = 0b000001111100000;
+	uint16_t heartColor = 1;
 
 	uint32_t lastTick = HAL_GetTick();
 	while(1) {
@@ -1289,22 +1203,23 @@ int main(void)
 		
 		statusIndex++;
 
-		uint16_t bufferIndex = 0;
 		for(uint16_t i = 0; i < 240*240; i++) {
 			if(statusIndex >= 240*240) {
 				statusIndex = 0;
 			}
 
-			//if(i > statusIndex) {
+/*
+			if(i > statusIndex) {
+				statusBuffer[i] = 3;
+			} else {
 				statusBuffer[i] = 0;
-			//} else {
-			//	statusBuffer[i] = 0b111110000000000;
-			//}
+			}
+*/
 		}
 /*
 */
 
-		drawHeart(heartColor, heartBuffer);
+		drawHeart(STATUS_SCREEN, heartColor, screenBuffers);
 
 		writeLCDCommand(ST7789_CASET, delay);
 		writeLCDDataByte(0x00, delay);
@@ -1319,23 +1234,32 @@ int main(void)
 		writeLCDDataByte(0xF0, delay);
 
 		writeLCDCommand(ST7789_RAMWR, delay);
-		bufferIndex = 0;
+
+		uint32_t bufferIndex = 0;
+
 		for(uint16_t x = 0; x < 240; x++) {
 			for(uint16_t y = 0; y < 240; y++) {
 					bufferIndex = (y*240) + x;
+					// 0b0 111 111 111 111 111
 					writeLCDDataByteMulti(
-						heartBuffer[bufferIndex] & 0xff,
-						heartBuffer[bufferIndex] & 0xff,
-						heartBuffer[bufferIndex] & 0xff,
-						heartBuffer[bufferIndex] & 0xff,
-						heartBuffer[bufferIndex] & 0xff,
+//#define GOOGLY_INNER_LEFT_SCREEN 0
+//#define GOOGLY_INNER_RIGHT_SCREEN 1
+//#define STATUS_SCREEN  2
+//#define GOOGLY_OUTER_LEFT_SCREEN 3
+//#define GOOGLY_OUTER_RIGHT_SCREEN 4
+
+						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_LEFT_SCREEN, screenBuffers)],
+						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_LEFT_SCREEN, screenBuffers)],
+						colourLUT[getPixelTFT(x, y, STATUS_SCREEN, screenBuffers)],
+						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_RIGHT_SCREEN, screenBuffers)],
+						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_RIGHT_SCREEN, screenBuffers)],
 					delay);
 					writeLCDDataByteMulti(
-						(heartBuffer[bufferIndex] >> 8),
-						(heartBuffer[bufferIndex] >> 8),
-						(heartBuffer[bufferIndex] >> 8),
-						(heartBuffer[bufferIndex] >> 8),
-						(heartBuffer[bufferIndex] >> 8),
+						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_LEFT_SCREEN, screenBuffers)],
+						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_LEFT_SCREEN, screenBuffers)],
+						colourLUT[getPixelTFT(x, y, STATUS_SCREEN, screenBuffers)],
+						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_RIGHT_SCREEN, screenBuffers)],
+						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_RIGHT_SCREEN, screenBuffers)],
 					delay);
 			}
 		}
