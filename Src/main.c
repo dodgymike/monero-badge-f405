@@ -869,6 +869,53 @@ void drawGoogly(struct GooglyState* googlyState, uint8_t screen, uint16_t heartB
 	drawCircle(googlyState->x, googlyState->y, googlyState->radius, screen, SCREEN_TFT_BLACK, heartBuffer);
 }
 
+void drawTextColourTFT(uint8_t x, uint8_t y, char text[], uint8_t length, uint8_t screen, uint16_t offColour, uint16_t onColour, uint16_t heartBuffer[240*240]) {
+	uint8_t xOffset = 0; 
+
+        for(int textIndex = 0; textIndex < length; textIndex++) {
+                uint8_t charToDraw = text[textIndex];
+                uint8_t charIndex = 0; 
+                if(charToDraw == 32) {
+                        charIndex = 36;
+                } else if(charToDraw >= 65 && charToDraw <= 90) {
+                        charIndex = charToDraw - 65;
+                } else if(charToDraw >= 97 && charToDraw <= 122) {
+                        charIndex = charToDraw - 97;
+                } else if(charToDraw >= 48 && charToDraw <= 57) {
+                        charIndex = charToDraw - 48 + 26;
+                }
+
+		int charMultiplier = 8;
+
+                uint8_t charWidth = characters[(charIndex * (CHAR_HEIGHT + 1))];
+                for(uint8_t charY = 0; charY < CHAR_HEIGHT; charY++) {
+                        for(uint8_t charX = 0; charX < charWidth; charX++) {
+                                uint8_t charLine = characters[(charIndex * (CHAR_HEIGHT + 1)) + charY + 1];
+				for(int xCopy = 0; xCopy < charMultiplier; xCopy++) {
+					for(int yCopy = 0; yCopy < charMultiplier; yCopy++) {
+						if((charLine >> (charWidth - charX - 1)) & 1) { 
+                                        		setPixelTFT(y + (charY * yCopy), x + xOffset + (charX * xCopy), screen, onColour, heartBuffer);
+						} else {
+							setPixelTFT(y + (charY * yCopy), x + xOffset + (charX * xCopy), screen, offColour, heartBuffer);
+       	                		        }
+					}
+				}
+                        }
+                }
+                //setPixel(xOffset, 20, brightness, 20, 20, 20);
+                xOffset += charWidth * charMultiplier;
+        }
+}
+
+
+void drawCybers(uint8_t x, uint8_t y, uint8_t screen, uint16_t heartBuffer[240*240]) {
+	for(int x = 0; x < 240; x++) {
+		drawLine(x, 0, x, 239, screen, SCREEN_TFT_YELLOW, heartBuffer);
+	}
+
+	drawTextColourTFT(10, 120, "cybers", 6, screen, SCREEN_TFT_YELLOW, SCREEN_TFT_BLACK, heartBuffer);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -1381,17 +1428,23 @@ int main(void)
 			}
 */
 		
-			drawHeart(STATUS_SCREEN, SCREEN_TFT_RED, screenBuffers);			// YES
+			//drawHeart(STATUS_SCREEN, SCREEN_TFT_RED, screenBuffers);			// YES
 			drawHeart(GOOGLY_INNER_RIGHT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// OUTER LEFT
 			drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// INNER RIGHT
 			drawHeart(GOOGLY_OUTER_LEFT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// INNER LEFT
 			drawHeart(GOOGLY_INNER_LEFT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// OUTER RIGHT
 		} else if(mode == DISPLAY_MODE_GOOGLY) {
 			for(int i = 0; i < 5; i++) {
+				if(i == STATUS_SCREEN) {
+					continue;
+				}
+
 				updateGoogly(&googlyStates[i]);
 				drawGoogly(&googlyStates[i], i, screenBuffers);
 			}
 		}
+
+		drawCybers(10, 120, STATUS_SCREEN, screenBuffers);
 
 		writeLCDCommand(ST7789_CASET, delay);
 		writeLCDDataByte(0x00, delay);
