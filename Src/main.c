@@ -1331,7 +1331,7 @@ int main(void)
 	uint16_t statusIndex = 0;
 
 	uint16_t heartColor = SCREEN_TFT_WHITE;
-#define DISPLAY_MODE_LAST_INDEX (0)
+#define DISPLAY_MODE_FIRST_INDEX (0)
 #define DISPLAY_MODE_HEART (0)
 #define DISPLAY_MODE_GOOGLY (1)
 #define DISPLAY_MODE_LAST_INDEX (1)
@@ -1360,6 +1360,13 @@ int main(void)
 			}
 		}
 		*/
+
+		if(rand() % 2000 > 1900) {
+			mode++;
+			if(mode > DISPLAY_MODE_LAST_INDEX) {
+				mode = DISPLAY_MODE_FIRST_INDEX;
+			}
+		}
 
 		if(mode == DISPLAY_MODE_HEART) {
 /*
