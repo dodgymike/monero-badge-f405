@@ -1280,11 +1280,11 @@ int main(void)
 		drawHeart(GOOGLY_INNER_LEFT_SCREEN, heartColor, screenBuffers);	// OUTER RIGHT
 */
 
-		drawHeart(STATUS_SCREEN, SCREEN_TFT_ORANGE, screenBuffers);			// YES
-		drawHeart(GOOGLY_INNER_RIGHT_SCREEN, SCREEN_TFT_GREEN, screenBuffers);	// OUTER LEFT
-		drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, SCREEN_TFT_BLUE, screenBuffers);	// INNER RIGHT
-		drawHeart(GOOGLY_OUTER_LEFT_SCREEN, SCREEN_TFT_PURPLE, screenBuffers);	// INNER LEFT
-		drawHeart(GOOGLY_INNER_LEFT_SCREEN, SCREEN_TFT_WHITE, screenBuffers);	// OUTER RIGHT
+		drawHeart(STATUS_SCREEN, SCREEN_TFT_RED, screenBuffers);			// YES
+		drawHeart(GOOGLY_INNER_RIGHT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// OUTER LEFT
+		drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// INNER RIGHT
+		drawHeart(GOOGLY_OUTER_LEFT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// INNER LEFT
+		drawHeart(GOOGLY_INNER_LEFT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// OUTER RIGHT
 /*
 */
 
