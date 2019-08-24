@@ -729,11 +729,27 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10,GPIO_PIN_SET);   // DC
 }
 
-void drawHeart(uint8_t screen, uint16_t color, uint8_t heartBuffer[240*240]) {
-	uint16_t bufferIndex = 0;
-	for(uint16_t x = 0; x < 240 * 240; x++) {
-		heartBuffer[bufferIndex++] = 3;
+#define SCREEN_TFT_RED    0
+#define SCREEN_TFT_GREEN  1
+#define SCREEN_TFT_BLUE   2
+#define SCREEN_TFT_BLACK  3
+#define SCREEN_TFT_YELLOW 4
+#define SCREEN_TFT_ORANGE 5
+#define SCREEN_TFT_BROWN  6
+#define SCREEN_TFT_WHITE  7
+
+void clearScreen(uint8_t screen, uint16_t buffer[240*240]) {
+	for(uint16_t x = 0; x < 240; x++) {
+		for(uint16_t y = 0; y < 240; y++) {
+			setPixelTFT(x, y, screen, SCREEN_TFT_BLACK, buffer);
+		}
 	}
+}
+
+void drawHeart(uint8_t screen, uint16_t color, uint16_t heartBuffer[240*240]) {
+	uint16_t bufferIndex = 0;
+
+	clearScreen(screen, heartBuffer);
 
 	int x1Center = 61.0;
 	int y1Center = 60.0;
@@ -1177,19 +1193,11 @@ int main(void)
 		}
 */
 
-#define SCREEN_TFT_BLUE   0
-#define SCREEN_TFT_RED    1
-#define SCREEN_TFT_GREEN  2
-#define SCREEN_TFT_BLACK  3
-#define SCREEN_TFT_YELLOW 4
-#define SCREEN_TFT_ORANGE 5
-#define SCREEN_TFT_BROWN  6
-#define SCREEN_TFT_WHITE  7
 
 	uint16_t colourLUT[] = {
-		0b111110000000000,	// blue
-		0b000001111100000,	// red
-		0b000000000011111,	// green
+		0b111110000000000,	// red
+		0b000001111100000,	// green
+		0b000000000011111,	// blue
 		0b000000000000000,	// black
 		0b111110000011111,	// orange
 		0b111111111100000,	// yellow
@@ -1198,7 +1206,7 @@ int main(void)
 	};
 
 /*
-		//drawHeart(STATUS_SCREEN, heartColor, screenBuffers);			// YES
+		/drawHeart(STATUS_SCREEN, heartColor, screenBuffers);			// YES
 		//drawHeart(GOOGLY_OUTER_LEFT_SCREEN, heartColor, screenBuffers);	// INNER LEFT
 		//drawHeart(GOOGLY_INNER_LEFT_SCREEN, heartColor, screenBuffers);	// OUTER RIGHT
 		//drawHeart(GOOGLY_INNER_RIGHT_SCREEN, heartColor, screenBuffers);	// OUTER LEFT
@@ -1206,19 +1214,19 @@ int main(void)
 */
 
 /*
+*/
 #define GOOGLY_OUTER_LEFT_SCREEN 0
 #define GOOGLY_OUTER_RIGHT_SCREEN 1
 #define STATUS_SCREEN  2
 #define GOOGLY_INNER_RIGHT_SCREEN 3
 #define GOOGLY_INNER_LEFT_SCREEN 4
-*/
 
+/*
 #define GOOGLY_OUTER_LEFT_SCREEN 4
 #define GOOGLY_OUTER_RIGHT_SCREEN 3
 #define STATUS_SCREEN  2
 #define GOOGLY_INNER_RIGHT_SCREEN 0
 #define GOOGLY_INNER_LEFT_SCREEN 1
-/*
 */
 
 	uint16_t screenBuffers[240 * 240];
@@ -1227,6 +1235,10 @@ int main(void)
 		//screenBuffers[x] = 0b0010010010010010;
 		//screenBuffers[x] = 0xff;
 		screenBuffers[x] = 0;
+	}
+
+	for(uint8_t screen = 0; screen < 5; screen++) {
+		clearScreen(screen, screenBuffers);
 	}
 
 	uint16_t statusIndex = 0;
@@ -1266,12 +1278,14 @@ int main(void)
 */
 
 /*
+*/
 		drawHeart(STATUS_SCREEN, heartColor, screenBuffers);			// YES
 		drawHeart(GOOGLY_OUTER_LEFT_SCREEN, heartColor, screenBuffers);	// INNER LEFT
 		drawHeart(GOOGLY_INNER_LEFT_SCREEN, heartColor, screenBuffers);	// OUTER RIGHT
 		drawHeart(GOOGLY_INNER_RIGHT_SCREEN, heartColor, screenBuffers);	// OUTER LEFT
-*/
 		drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, heartColor, screenBuffers);	// INNER RIGHT
+/*
+*/
 
 		writeLCDCommand(ST7789_CASET, delay);
 		writeLCDDataByte(0x00, delay);
@@ -1287,25 +1301,22 @@ int main(void)
 
 		writeLCDCommand(ST7789_RAMWR, delay);
 
-		uint32_t bufferIndex = 0;
-
 		for(uint16_t x = 0; x < 240; x++) {
 			for(uint16_t y = 0; y < 240; y++) {
-					bufferIndex = (y*240) + x;
 					// 0b0 111 111 111 111 111
 					writeLCDDataByteMulti(
-						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_LEFT_SCREEN, screenBuffers)],
-						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_LEFT_SCREEN, screenBuffers)],
-						colourLUT[getPixelTFT(x, y, STATUS_SCREEN, screenBuffers)],
-						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_RIGHT_SCREEN, screenBuffers)],
-						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_RIGHT_SCREEN, screenBuffers)],
+						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_LEFT_SCREEN, screenBuffers)] >> 8,
+						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_LEFT_SCREEN, screenBuffers)] >> 8,
+						colourLUT[getPixelTFT(x, y, STATUS_SCREEN, screenBuffers)] >> 8,
+						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_RIGHT_SCREEN, screenBuffers)] >> 8,
+						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_RIGHT_SCREEN, screenBuffers)] >> 8,
 					delay);
 					writeLCDDataByteMulti(
-						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_LEFT_SCREEN, screenBuffers)],
-						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_LEFT_SCREEN, screenBuffers)],
-						colourLUT[getPixelTFT(x, y, STATUS_SCREEN, screenBuffers)],
-						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_RIGHT_SCREEN, screenBuffers)],
-						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_RIGHT_SCREEN, screenBuffers)],
+						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_LEFT_SCREEN, screenBuffers)] & 0xff,
+						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_LEFT_SCREEN, screenBuffers)] & 0xff,
+						colourLUT[getPixelTFT(x, y, STATUS_SCREEN, screenBuffers)] & 0xff,
+						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_RIGHT_SCREEN, screenBuffers)] & 0xff,
+						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_RIGHT_SCREEN, screenBuffers)] & 0xff,
 					delay);
 			}
 		}
