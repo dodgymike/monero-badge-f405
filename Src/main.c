@@ -616,17 +616,45 @@ void drawLine(float y1, float x1, float y2, float x2, uint8_t screen, uint16_t c
 	}
 }
 
+float sinLUT[720];
+float cosLUT[720];
+int sinLutPopulated = 0;
+
 void drawCircle(float y, float x, float radius, uint8_t screen, uint16_t color, uint16_t buffer[240*240]) {
-	int bob = 0.0;
+	if(!sinLutPopulated) {
+		sinLutPopulated = 1;
+
+		int lutIndex = 0;
+		for(float angle = 0.0f; angle < 6.282; angle += 0.008725) {
+			sinLUT[lutIndex] = sin(angle);
+			cosLUT[lutIndex] = cos(angle);
+			lutIndex++;
+		}
+	}
+
+/*
+*/
 	for(; radius >= 0; radius -= 0.5) {
-		for(float i = 0.0f; i < (2.0f * 3.141f); i += 0.01f) {
+		for(int i = 0; i < 720;  i++) {
 			//float xPos = 65.0 + (60.0 * sin(i));
-			float xPos = x + (radius * sinf(i));
-			float yPos = y + (radius * cosf(i));
+			float xPos = x + (radius * sinLUT[i]);
+			float yPos = y + (radius * cosLUT[i]);
 
 			setPixelTFT(xPos, yPos, screen, color, buffer);
 		}
 	}
+
+/*
+	for(int i = 1; i < 360; i++) {
+		float x1 = x + (radius * sinLUT[i]);
+		float y1 = y + (radius * cosLUT[i]);
+
+		float x2 = x + (radius * sinLUT[719 - i]);
+		float y2 = y + (radius * cosLUT[719 - i]);
+
+		drawLine(y1, x1, y2, x2, screen, color, buffer);
+	}
+*/
 }
 
 void byteToBits(uint8_t bits[8], uint8_t byte) {
@@ -775,6 +803,70 @@ void drawHeart(uint8_t screen, uint16_t color, uint16_t heartBuffer[240*240]) {
 	}
 
 	drawCircle(120, 120, 60, screen, color, heartBuffer);
+}
+
+struct GooglyState {
+	uint8_t x;
+	uint8_t y;
+	int verticalRate;
+	int horizontalRate;
+
+	uint8_t radius;
+};
+
+void updateGoogly(struct GooglyState* googlyState) {
+	if(googlyState->verticalRate <= 1.0) {
+		float r = (float)rand() / (float)RAND_MAX;
+		googlyState->verticalRate = (20.0f * r) - 10.0f;
+	}
+
+	if(googlyState->horizontalRate <= 1.0) {
+		float r = (float)rand() / (float)RAND_MAX;
+		googlyState->horizontalRate = (20.0f * r) - 10.0f;
+	}
+
+	googlyState->x += googlyState->horizontalRate;
+	googlyState->y += googlyState->verticalRate;
+
+	googlyState->horizontalRate *= 0.85;
+	googlyState->verticalRate *= 0.85;
+}
+
+/*
+uint8_t distance(float x1, float y1, float x2, float y2) {
+	float xDiff = x2 - x1;
+	float yDiff = y2 - y1;
+
+	float xDiffSq = xDiff * xDiff;
+	float yDiffSq = yDiff * yDiff;
+
+	return sqrt(xDiffSq + yDiffSq;
+}
+*/
+
+void drawGoogly(struct GooglyState* googlyState, uint8_t screen, uint16_t heartBuffer[240*240]) {
+	for(int x = 0; x < 240; x++) {
+		drawLine(x, 0, x, 239, screen, SCREEN_TFT_RED, heartBuffer);
+	}
+	drawCircle(120, 120, 119, screen, SCREEN_TFT_WHITE, heartBuffer);
+
+	if(googlyState->x - googlyState->radius < 0) {
+		googlyState->x = googlyState->radius;
+		googlyState->horizontalRate = 0;
+	} else if(googlyState->x + googlyState->radius >= 240) {
+		googlyState->x = 239 - googlyState->radius;
+		googlyState->horizontalRate = 0;
+	}
+
+	if(googlyState->y - googlyState->radius < 0) {
+		googlyState->y = googlyState->radius;
+		googlyState->verticalRate = 0;
+	} else if(googlyState->y + googlyState->radius >= 240) {
+		googlyState->y = 239 - googlyState->radius;
+		googlyState->verticalRate = 0;
+	}
+
+	drawCircle(googlyState->x, googlyState->y, googlyState->radius, screen, SCREEN_TFT_BLACK, heartBuffer);
 }
 
 /* USER CODE END 0 */
@@ -1239,54 +1331,60 @@ int main(void)
 	uint16_t statusIndex = 0;
 
 	uint16_t heartColor = SCREEN_TFT_WHITE;
+#define DISPLAY_MODE_LAST_INDEX (0)
+#define DISPLAY_MODE_HEART (0)
+#define DISPLAY_MODE_GOOGLY (1)
+#define DISPLAY_MODE_LAST_INDEX (1)
 
+	int mode = DISPLAY_MODE_GOOGLY;
+
+	uint32_t modeChangeTick = HAL_GetTick();
 	uint32_t lastTick = HAL_GetTick();
+	
+	struct GooglyState googlyStates[5];
+	for(int i = 0; i < 5; i++) {
+		googlyStates[i].x = 120;
+		googlyStates[i].y = 120;
+		googlyStates[i].radius = (i + 2) * 10;
+		googlyStates[i].verticalRate = 0;
+		googlyStates[i].horizontalRate = 0;
+	}
+
 	while(1) {
-/*
-		float tickDistance = HAL_GetTick() - lastTick;
-		
-		if(tickDistance > 1000.0f) {
-			lastTick = HAL_GetTick();
-		} else if(tickDistance > 500.0f) {
-			heartColor = ((int)(0xff * 1.0f/logf(10.0f + tickDistance))) & 0b000001111100000;
-		} else {
-			heartColor = ((int)(0xff * 1.0f/logf(10.0f + tickDistance))) & 0b000001111100000;
-		}
-*/
-		
-		statusIndex++;
-
-		for(uint16_t i = 0; i < 240*240; i++) {
-			if(statusIndex >= 240*240) {
-				statusIndex = 0;
+		/*
+		if((HAL_GetTick() - modeChangeTick) > 1000) {
+			modeChangeTick = HAL_GetTick();
+			mode++;
+			if(mode >= DISPLAY_MODE_LAST_INDEX) {
+				mode = DISPLAY_MODE_FIRST_INDEX;
 			}
+		}
+		*/
 
+		if(mode == DISPLAY_MODE_HEART) {
 /*
-			if(i > statusIndex) {
-				statusBuffer[i] = 3;
+			float tickDistance = HAL_GetTick() - lastTick;
+		
+			if(tickDistance > 1000.0f) {
+				lastTick = HAL_GetTick();
+			} else if(tickDistance > 500.0f) {
+				heartColor = ((int)(0xff * 1.0f/logf(10.0f + tickDistance))) & 0b000001111100000;
 			} else {
-				statusBuffer[i] = 0;
+				heartColor = ((int)(0xff * 1.0f/logf(10.0f + tickDistance))) & 0b000001111100000;
 			}
 */
+		
+			drawHeart(STATUS_SCREEN, SCREEN_TFT_RED, screenBuffers);			// YES
+			drawHeart(GOOGLY_INNER_RIGHT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// OUTER LEFT
+			drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// INNER RIGHT
+			drawHeart(GOOGLY_OUTER_LEFT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// INNER LEFT
+			drawHeart(GOOGLY_INNER_LEFT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// OUTER RIGHT
+		} else if(mode == DISPLAY_MODE_GOOGLY) {
+			for(int i = 0; i < 5; i++) {
+				updateGoogly(&googlyStates[i]);
+				drawGoogly(&googlyStates[i], i, screenBuffers);
+			}
 		}
-/*
-*/
-
-/*
-		drawHeart(STATUS_SCREEN, heartColor, screenBuffers);			// YES
-		drawHeart(GOOGLY_INNER_RIGHT_SCREEN, heartColor, screenBuffers);	// OUTER LEFT
-		drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, heartColor, screenBuffers);	// INNER RIGHT
-		drawHeart(GOOGLY_OUTER_LEFT_SCREEN, heartColor, screenBuffers);	// INNER LEFT
-		drawHeart(GOOGLY_INNER_LEFT_SCREEN, heartColor, screenBuffers);	// OUTER RIGHT
-*/
-
-		drawHeart(STATUS_SCREEN, SCREEN_TFT_RED, screenBuffers);			// YES
-		drawHeart(GOOGLY_INNER_RIGHT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// OUTER LEFT
-		drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// INNER RIGHT
-		drawHeart(GOOGLY_OUTER_LEFT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// INNER LEFT
-		drawHeart(GOOGLY_INNER_LEFT_SCREEN, SCREEN_TFT_RED, screenBuffers);	// OUTER RIGHT
-/*
-*/
 
 		writeLCDCommand(ST7789_CASET, delay);
 		writeLCDDataByte(0x00, delay);
