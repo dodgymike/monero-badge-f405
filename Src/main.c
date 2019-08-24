@@ -735,7 +735,7 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
 #define SCREEN_TFT_BLACK  3
 #define SCREEN_TFT_YELLOW 4
 #define SCREEN_TFT_ORANGE 5
-#define SCREEN_TFT_BROWN  6
+#define SCREEN_TFT_PURPLE  6
 #define SCREEN_TFT_WHITE  7
 
 void clearScreen(uint8_t screen, uint16_t buffer[240*240]) {
@@ -1195,14 +1195,14 @@ int main(void)
 
 
 	uint16_t colourLUT[] = {
-		0b111110000000000,	// red
-		0b000001111100000,	// green
-		0b000000000011111,	// blue
-		0b000000000000000,	// black
-		0b111110000011111,	// orange
-		0b111111111100000,	// yellow
-		0b111110000011111,	// purple
-		0b111111111111111,	// white
+		0b1111100000000000,	// red
+		0b0000011111000000,	// green
+		0b0000000000111110,	// blue
+		0b0000000000000000,	// black
+		0b1111111111000000,	// yellow
+		0b1111101111000000,	// orange
+		0b0111100000011110,	// purple
+		0b1111111111111110,	// white
 	};
 
 /*
@@ -1215,19 +1215,14 @@ int main(void)
 
 /*
 */
-#define GOOGLY_OUTER_LEFT_SCREEN 0
-#define GOOGLY_OUTER_RIGHT_SCREEN 1
 #define STATUS_SCREEN  2
-#define GOOGLY_INNER_RIGHT_SCREEN 3
-#define GOOGLY_INNER_LEFT_SCREEN 4
-
-/*
-#define GOOGLY_OUTER_LEFT_SCREEN 4
 #define GOOGLY_OUTER_RIGHT_SCREEN 3
-#define STATUS_SCREEN  2
 #define GOOGLY_INNER_RIGHT_SCREEN 0
+#define GOOGLY_OUTER_LEFT_SCREEN 4
+
+
 #define GOOGLY_INNER_LEFT_SCREEN 1
-*/
+
 
 	uint16_t screenBuffers[240 * 240];
 
@@ -1243,7 +1238,7 @@ int main(void)
 
 	uint16_t statusIndex = 0;
 
-	uint16_t heartColor = SCREEN_TFT_RED;
+	uint16_t heartColor = SCREEN_TFT_WHITE;
 
 	uint32_t lastTick = HAL_GetTick();
 	while(1) {
@@ -1278,12 +1273,18 @@ int main(void)
 */
 
 /*
-*/
 		drawHeart(STATUS_SCREEN, heartColor, screenBuffers);			// YES
-		drawHeart(GOOGLY_OUTER_LEFT_SCREEN, heartColor, screenBuffers);	// INNER LEFT
-		drawHeart(GOOGLY_INNER_LEFT_SCREEN, heartColor, screenBuffers);	// OUTER RIGHT
 		drawHeart(GOOGLY_INNER_RIGHT_SCREEN, heartColor, screenBuffers);	// OUTER LEFT
 		drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, heartColor, screenBuffers);	// INNER RIGHT
+		drawHeart(GOOGLY_OUTER_LEFT_SCREEN, heartColor, screenBuffers);	// INNER LEFT
+		drawHeart(GOOGLY_INNER_LEFT_SCREEN, heartColor, screenBuffers);	// OUTER RIGHT
+*/
+
+		drawHeart(STATUS_SCREEN, SCREEN_TFT_ORANGE, screenBuffers);			// YES
+		drawHeart(GOOGLY_INNER_RIGHT_SCREEN, SCREEN_TFT_GREEN, screenBuffers);	// OUTER LEFT
+		drawHeart(GOOGLY_OUTER_RIGHT_SCREEN, SCREEN_TFT_BLUE, screenBuffers);	// INNER RIGHT
+		drawHeart(GOOGLY_OUTER_LEFT_SCREEN, SCREEN_TFT_PURPLE, screenBuffers);	// INNER LEFT
+		drawHeart(GOOGLY_INNER_LEFT_SCREEN, SCREEN_TFT_WHITE, screenBuffers);	// OUTER RIGHT
 /*
 */
 
