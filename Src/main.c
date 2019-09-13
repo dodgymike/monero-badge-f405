@@ -888,22 +888,28 @@ void drawTextColourTFT(uint8_t x, uint8_t y, char text[], uint8_t length, uint8_
 		int charMultiplier = 8;
 
                 uint8_t charWidth = characters[(charIndex * (CHAR_HEIGHT + 1))];
-                for(uint8_t charY = 0; charY < CHAR_HEIGHT; charY++) {
-                        for(uint8_t charX = 0; charX < charWidth; charX++) {
-                                uint8_t charLine = characters[(charIndex * (CHAR_HEIGHT + 1)) + charY + 1];
-				for(int xCopy = 0; xCopy < charMultiplier; xCopy++) {
-					for(int yCopy = 0; yCopy < charMultiplier; yCopy++) {
+
+		for(uint8_t charY = 0; charY < CHAR_HEIGHT; charY++) {
+			for(uint8_t charX = 0; charX < charWidth; charX++) {
+				uint8_t charLine = characters[(charIndex * (CHAR_HEIGHT + 1)) + charY + 1];
+
+				for(uint8_t charYOffset = 0; charYOffset < charMultiplier; charYOffset++) {
+					for(uint8_t charXOffset = 0; charXOffset < charMultiplier; charXOffset++) {
+						uint8_t pixelX = x + charXOffset + (charX * charMultiplier) + xOffset;
+						uint8_t pixelY = y + charYOffset + (charY * charMultiplier);
+
 						if((charLine >> (charWidth - charX - 1)) & 1) { 
-                                        		setPixelTFT(y + (charY * yCopy), x + xOffset + (charX * xCopy), screen, onColour, heartBuffer);
+							setPixelTFT(pixelY, pixelX, screen, onColour, heartBuffer);
 						} else {
-							setPixelTFT(y + (charY * yCopy), x + xOffset + (charX * xCopy), screen, offColour, heartBuffer);
-       	                		        }
+							setPixelTFT(pixelY, pixelX, screen, offColour, heartBuffer);
+						}
 					}
 				}
-                        }
-                }
-                //setPixel(xOffset, 20, brightness, 20, 20, 20);
-                xOffset += charWidth * charMultiplier;
+			}
+		}
+
+		//setPixel(xOffset, 20, brightness, 20, 20, 20);
+		xOffset += charWidth * charMultiplier;
         }
 }
 
@@ -913,7 +919,11 @@ void drawCybers(uint8_t x, uint8_t y, uint8_t screen, uint16_t heartBuffer[240*2
 		drawLine(x, 0, x, 239, screen, SCREEN_TFT_YELLOW, heartBuffer);
 	}
 
-	drawTextColourTFT(10, 120, "cybers", 6, screen, SCREEN_TFT_YELLOW, SCREEN_TFT_BLACK, heartBuffer);
+	//drawTextColourTFT(10, 120, "crsm", 4, screen, SCREEN_TFT_YELLOW, SCREEN_TFT_BLACK, heartBuffer);
+	//drawTextColourTFT(10, 120, "cbrs", 4, screen, SCREEN_TFT_YELLOW, SCREEN_TFT_BLACK, heartBuffer);
+	//drawTextColourTFT(10, 120, "cbers", 4, screen, SCREEN_TFT_YELLOW, SCREEN_TFT_BLACK, heartBuffer);
+	drawTextColourTFT(24, 120 - (((CHAR_HEIGHT + 1) * 8)), "cyber", 5, screen, SCREEN_TFT_YELLOW, SCREEN_TFT_BLACK, heartBuffer);
+	drawTextColourTFT(96, 120 + ((CHAR_HEIGHT * 8) / 2), "af", 2, screen, SCREEN_TFT_YELLOW, SCREEN_TFT_BLACK, heartBuffer);
 }
 
 /* USER CODE END 0 */
