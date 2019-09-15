@@ -620,7 +620,22 @@ float sinLUT[720];
 float cosLUT[720];
 int sinLutPopulated = 0;
 
+float quarterAngle = 6.28318f/4.0f;
+
 void drawCircle(float y, float x, float radius, uint8_t screen, uint16_t color, uint16_t buffer[240*240]) {
+	for(float angle = 0.0f; angle < quarterAngle; angle += 0.008725) {
+		int rightX = radius * sinf(angle);
+		int leftX = radius * sinf(angle + quarterAngle + quarterAngle);
+		int topY = radius * cosf(angle);
+		int bottomY = radius * cosf(angle + quarterAngle + quarterAngle);
+
+		for(int pixelX = leftX; pixelX < rightX; pixelX++) {
+			setPixelTFT(x + pixelX, y + topY, screen, color, buffer);
+			setPixelTFT(x + pixelX, y + bottomY, screen, color, buffer);
+		}
+	}
+
+/*
 	if(!sinLutPopulated) {
 		sinLutPopulated = 1;
 
@@ -631,9 +646,8 @@ void drawCircle(float y, float x, float radius, uint8_t screen, uint16_t color, 
 			lutIndex++;
 		}
 	}
-
-/*
 */
+/*
 	for(; radius >= 0; radius -= 0.5) {
 		for(int i = 0; i < 720;  i++) {
 			//float xPos = 65.0 + (60.0 * sin(i));
@@ -643,8 +657,9 @@ void drawCircle(float y, float x, float radius, uint8_t screen, uint16_t color, 
 			setPixelTFT(xPos, yPos, screen, color, buffer);
 		}
 	}
-
+*/
 /*
+
 	for(int i = 1; i < 360; i++) {
 		float x1 = x + (radius * sinLUT[i]);
 		float y1 = y + (radius * cosLUT[i]);
@@ -699,6 +714,8 @@ void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByt
 
 	uint8_t dataEBits[8];
 	byteToBits(dataEBits, dataByteE);
+/*
+*/
 
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10,GPIO_PIN_SET);   // DC
 
@@ -711,6 +728,30 @@ void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByt
   		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, dataCBits[i]);
   		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, dataDBits[i]);
   		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, dataEBits[i]);
+/*
+*/
+
+/*
+		uint8_t bitMask = 0x80 - (1 << i);
+		//uint8_t bitMask = (1 << i);
+		uint16_t pinMaskOn = (
+			(dataByteA & bitMask ? GPIO_PIN_1 : 0) |
+			(dataByteB & bitMask ? GPIO_PIN_3 : 0) |
+			(dataByteC & bitMask ? GPIO_PIN_4 : 0) |
+			(dataByteD & bitMask ? GPIO_PIN_5 : 0) |
+			(dataByteE & bitMask ? GPIO_PIN_10 : 0)
+		);
+		uint16_t pinMaskOff = (
+			(dataByteA & bitMask ? 0 : GPIO_PIN_1) |
+			(dataByteB & bitMask ? 0 : GPIO_PIN_3) |
+			(dataByteC & bitMask ? 0 : GPIO_PIN_4) |
+			(dataByteD & bitMask ? 0 : GPIO_PIN_5) |
+			(dataByteE & bitMask ? 0 : GPIO_PIN_10)
+		);
+		
+  		HAL_GPIO_WritePin(GPIOB, pinMaskOn, GPIO_PIN_SET);
+  		HAL_GPIO_WritePin(GPIOB, pinMaskOff, GPIO_PIN_RESET);
+*/
 
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_RESET);
 
@@ -831,27 +872,28 @@ float getRandom() {
 		randomIndex = 0;
 	}
 
-	return randoms[randomIndex++];
+	//return randoms[randomIndex++];
+	return (float)rand() / (float)RAND_MAX;
 }
 
 void updateGoogly(struct GooglyState* googlyState) {
-	if(googlyState->verticalRate <= 1.0) {
+	if(googlyState->verticalRate <= 5.0) {
 		float r = getRandom();
-		googlyState->verticalRate = (40.0f * r) - 20.0f;
+		googlyState->verticalRate = (100.0f * r) - 50.0f;
 	}
 
-	if(googlyState->horizontalRate <= 1.0) {
+	if(googlyState->horizontalRate <= 5.0) {
 		float r = getRandom();
-		googlyState->horizontalRate = (40.0f * r) - 20.0f;
+		googlyState->horizontalRate = (100.0f * r) - 50.0f;
 	}
 
 	googlyState->x += googlyState->horizontalRate;
 	googlyState->y += googlyState->verticalRate;
 
-	//googlyState->horizontalRate *= 0.85;
-	//googlyState->verticalRate *= 0.85;
-	googlyState->horizontalRate >>= 1;
-	googlyState->verticalRate >>= 1;
+	googlyState->horizontalRate *= 0.85;
+	googlyState->verticalRate *= 0.85;
+	//googlyState->horizontalRate >>= 1;
+	//googlyState->verticalRate >>= 1;
 }
 
 /*
@@ -866,8 +908,10 @@ uint8_t distance(float x1, float y1, float x2, float y2) {
 }
 */
 
-int whiteRedLeft[240];
-int whiteRedRight[240];
+int whiteRedLeft[5][240];
+int whiteRedRight[5][240];
+int blackLeft[5][240];
+int blackRight[5][240];
 
 void drawGoogly(struct GooglyState* googlyState, uint8_t screen, uint16_t heartBuffer[240*240]) {
 	for(int x = 0; x < 240; x++) {
@@ -894,6 +938,30 @@ void drawGoogly(struct GooglyState* googlyState, uint8_t screen, uint16_t heartB
 
 	drawCircle(googlyState->x, googlyState->y, googlyState->radius, screen, SCREEN_TFT_BLACK, heartBuffer);
 }
+/*
+*/
+
+/*
+void drawGoogly(struct GooglyState* googlyState, uint8_t screen, uint16_t heartBuffer[240*240]) {
+	for(int y = 0; y < 240; y++) {
+		for(int x = 0; x < 240; x++) {
+			if(x <= blackLeft[screen][y]) {
+				// BLACK
+			} else if(x >= blackRight[screen][y]) {
+				// BLACK
+			} else {
+				if(x <= whiteRedLeft[screen][y]) {
+					// RED
+				} else if(x >= whiteRedRight[screen][y]) {
+					// RED
+				} else {
+					// WHITE
+				}
+			}
+		}
+	}
+}
+*/
 
 void drawTextColourTFT(uint8_t x, uint8_t y, char text[], uint8_t length, uint8_t screen, uint16_t offColour, uint16_t onColour, uint16_t heartBuffer[240*240]) {
 	uint8_t xOffset = 0; 
@@ -1369,15 +1437,26 @@ int main(void)
 */
 
 
-	uint16_t colourLUT[] = {
-		0b1111100000000000,	// red
-		0b0000011111000000,	// green
-		0b0000000000111110,	// blue
-		0b0000000000000000,	// black
-		0b1111111111000000,	// yellow
-		0b1111101111000000,	// orange
-		0b0111100000011110,	// purple
-		0b1111111111111110,	// white
+	uint16_t colourLUTLEFT[] = {
+		0b11111000,	// red
+		0b00000111,	// green
+		0b00000000,	// blue
+		0b00000000,	// black
+		0b11111111,	// yellow
+		0b11111011,	// orange
+		0b01111000,	// purple
+		0b11111111,	// white
+	};
+
+	uint16_t colourLUTRIGHT[] = {
+		0b00000000,	// red
+		0b11000000,	// green
+		0b00111110,	// blue
+		0b00000000,	// black
+		0b11000000,	// yellow
+		0b11000000,	// orange
+		0b00011110,	// purple
+		0b11111110,	// white
 	};
 
 /*
@@ -1492,7 +1571,7 @@ int main(void)
 			}
 		}
 
-		//drawCybers(10, 120, STATUS_SCREEN, screenBuffers);
+		drawCybers(10, 120, STATUS_SCREEN, screenBuffers);
 
 		writeLCDCommand(ST7789_CASET, delay);
 		writeLCDDataByte(0x00, delay);
@@ -1511,19 +1590,25 @@ int main(void)
 		for(uint16_t x = 0; x < 240; x++) {
 			for(uint16_t y = 0; y < 240; y++) {
 					// 0b0 111 111 111 111 111
+					uint8_t pixel1 = getPixelTFT(x, y, GOOGLY_OUTER_LEFT_SCREEN, screenBuffers);
+					uint8_t pixel2 = getPixelTFT(x, y, GOOGLY_INNER_LEFT_SCREEN, screenBuffers);
+					uint8_t pixel3 = getPixelTFT(x, y, STATUS_SCREEN, screenBuffers);
+					uint8_t pixel4 = getPixelTFT(x, y, GOOGLY_INNER_RIGHT_SCREEN, screenBuffers);
+					uint8_t pixel5 = getPixelTFT(x, y, GOOGLY_OUTER_RIGHT_SCREEN, screenBuffers);
+
 					writeLCDDataByteMulti(
-						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_LEFT_SCREEN, screenBuffers)] >> 8,
-						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_LEFT_SCREEN, screenBuffers)] >> 8,
-						colourLUT[getPixelTFT(x, y, STATUS_SCREEN, screenBuffers)] >> 8,
-						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_RIGHT_SCREEN, screenBuffers)] >> 8,
-						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_RIGHT_SCREEN, screenBuffers)] >> 8,
+						colourLUTLEFT[pixel1],
+						colourLUTLEFT[pixel2],
+						colourLUTLEFT[pixel3],
+						colourLUTLEFT[pixel4],
+						colourLUTLEFT[pixel5],
 					delay);
 					writeLCDDataByteMulti(
-						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_LEFT_SCREEN, screenBuffers)] & 0xff,
-						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_LEFT_SCREEN, screenBuffers)] & 0xff,
-						colourLUT[getPixelTFT(x, y, STATUS_SCREEN, screenBuffers)] & 0xff,
-						colourLUT[getPixelTFT(x, y, GOOGLY_INNER_RIGHT_SCREEN, screenBuffers)] & 0xff,
-						colourLUT[getPixelTFT(x, y, GOOGLY_OUTER_RIGHT_SCREEN, screenBuffers)] & 0xff,
+						colourLUTRIGHT[pixel1],
+						colourLUTRIGHT[pixel2],
+						colourLUTRIGHT[pixel3],
+						colourLUTRIGHT[pixel4],
+						colourLUTRIGHT[pixel5],
 					delay);
 			}
 		}
