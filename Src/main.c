@@ -714,11 +714,13 @@ void writeLCDDataByteMulti(uint8_t dataByteA, uint8_t dataByteB, uint8_t dataByt
 
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_RESET);
 
-		for(int j = 0; j < delay; j++) { asm("NOP");}
+		//for(int j = 0; j < delay; j++) { asm("NOP");}
+		asm("NOP");
 
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_SET);
 
-		for(int j = 0; j < delay; j++) { asm("NOP");}
+		//for(int j = 0; j < delay; j++) { asm("NOP");}
+		asm("NOP");
 	}
 
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_10,GPIO_PIN_RESET); // D2
@@ -742,11 +744,13 @@ void writeLCDCommand(uint8_t command, uint32_t delay) {
 
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_RESET);
 
-		for(int j = 0; j < delay; j++) { asm("NOP");}
+		//for(int j = 0; j < delay; j++) { asm("NOP");}
+		asm("NOP");
 
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_SET);
 
-		for(int j = 0; j < delay; j++) { asm("NOP");}
+		//for(int j = 0; j < delay; j++) { asm("NOP");}
+		asm("NOP");
 	}
 
   	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_10,GPIO_PIN_RESET); // D2
@@ -814,22 +818,40 @@ struct GooglyState {
 	uint8_t radius;
 };
 
+float randoms[240];
+void generateRandoms() {
+	for(int i = 0; i < 240; i++) {
+		randoms[i] = (float)rand() / (float)RAND_MAX;
+	}
+}
+
+int randomIndex = 0;
+float getRandom() {
+	if(randomIndex >= 240) {
+		randomIndex = 0;
+	}
+
+	return randoms[randomIndex++];
+}
+
 void updateGoogly(struct GooglyState* googlyState) {
 	if(googlyState->verticalRate <= 1.0) {
-		float r = (float)rand() / (float)RAND_MAX;
-		googlyState->verticalRate = (20.0f * r) - 10.0f;
+		float r = getRandom();
+		googlyState->verticalRate = (40.0f * r) - 20.0f;
 	}
 
 	if(googlyState->horizontalRate <= 1.0) {
-		float r = (float)rand() / (float)RAND_MAX;
-		googlyState->horizontalRate = (20.0f * r) - 10.0f;
+		float r = getRandom();
+		googlyState->horizontalRate = (40.0f * r) - 20.0f;
 	}
 
 	googlyState->x += googlyState->horizontalRate;
 	googlyState->y += googlyState->verticalRate;
 
-	googlyState->horizontalRate *= 0.85;
-	googlyState->verticalRate *= 0.85;
+	//googlyState->horizontalRate *= 0.85;
+	//googlyState->verticalRate *= 0.85;
+	googlyState->horizontalRate >>= 1;
+	googlyState->verticalRate >>= 1;
 }
 
 /*
@@ -844,10 +866,14 @@ uint8_t distance(float x1, float y1, float x2, float y2) {
 }
 */
 
+int whiteRedLeft[240];
+int whiteRedRight[240];
+
 void drawGoogly(struct GooglyState* googlyState, uint8_t screen, uint16_t heartBuffer[240*240]) {
 	for(int x = 0; x < 240; x++) {
 		drawLine(x, 0, x, 239, screen, SCREEN_TFT_RED, heartBuffer);
 	}
+
 	drawCircle(120, 120, 119, screen, SCREEN_TFT_WHITE, heartBuffer);
 
 	if(googlyState->x - googlyState->radius < 0) {
@@ -1407,6 +1433,9 @@ int main(void)
 		googlyStates[i].horizontalRate = 0;
 	}
 
+	// *** GENERATE SOME RANDOMS ***
+	generateRandoms();
+
 	while(1) {
 		/*
 		if((HAL_GetTick() - modeChangeTick) > 1000) {
@@ -1418,12 +1447,14 @@ int main(void)
 		}
 		*/
 
+/*
 		if(rand() % 2000 > 1900) {
 			mode++;
 			if(mode > DISPLAY_MODE_LAST_INDEX) {
 				mode = DISPLAY_MODE_FIRST_INDEX;
 			}
 		}
+*/
 
 		if(mode == DISPLAY_MODE_HEART) {
 /*
@@ -1450,11 +1481,18 @@ int main(void)
 				}
 
 				updateGoogly(&googlyStates[i]);
+			}
+
+			for(int i = 0; i < 5; i++) {
+				if(i == STATUS_SCREEN) {
+					continue;
+				}
+
 				drawGoogly(&googlyStates[i], i, screenBuffers);
 			}
 		}
 
-		drawCybers(10, 120, STATUS_SCREEN, screenBuffers);
+		//drawCybers(10, 120, STATUS_SCREEN, screenBuffers);
 
 		writeLCDCommand(ST7789_CASET, delay);
 		writeLCDDataByte(0x00, delay);
@@ -1493,10 +1531,12 @@ int main(void)
 */
   		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13,GPIO_PIN_RESET); // DC
 
+/*
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
 		HAL_Delay(100);
   		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
 		HAL_Delay(100);
+*/
 	}
   }
   /* USER CODE END 3 */
